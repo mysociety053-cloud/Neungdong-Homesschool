@@ -224,6 +224,21 @@
     </div>
   </section>
 
+  <!-- ===================== 시작 전 / 종료 / 준비중 안내 화면 ===================== -->
+  <section id="noticeScreen" class="screen" hidden>
+    <div class="gate">
+      <span class="eyebrow">능동 디지털 인성교육 프로젝트</span>
+      <h1 class="slogan" id="noticeTitle">아직 미션이<br><b>시작되지 않았어요</b></h1>
+      <p class="lead" id="noticeLead">조금만 기다려 주세요.</p>
+      <div class="gate-card">
+        <h2 id="noticeHeading">미션 시작 전이에요</h2>
+        <p class="desc" id="noticeDesc"></p>
+        <p class="note" id="noticeNote">🍯 시작일이 되면 이 화면에서 바로 오늘의 미션이 열려요.</p>
+      </div>
+      <button class="signout" id="noticeSignout">로그아웃</button>
+    </div>
+  </section>
+
   <!-- ===================== 메인(미션) 화면 ===================== -->
   <section id="appScreen" class="screen" hidden>
     <header>
@@ -368,6 +383,7 @@ let MISSIONS = DEFAULT_MISSIONS.slice(); // 관리자가 저장한 미션이 있
 /* ===================== 화면 전환 ===================== */
 const screens = {auth:document.getElementById('authScreen'),
                  setup:document.getElementById('setupScreen'),
+                 notice:document.getElementById('noticeScreen'),
                  app:document.getElementById('appScreen')};
 function show(name){for(const k in screens){screens[k].hidden = (k!==name);}}
 
@@ -388,6 +404,40 @@ function computeToday(startStr){
   const start=new Date(startStr+'T00:00:00'); const now=new Date(); now.setHours(0,0,0,0);
   const diff=Math.floor((now-start)/86400000);
   if(diff<=0) return 0; if(diff>=NUM_DAYS-1) return NUM_DAYS-1; return diff;
+}
+/* 시작일 기준 시즌 상태: 미설정 / 시작 전 / 진행 중 / 종료 */
+function programStatus(startStr){
+  if(!startStr) return {state:'notready'};
+  const start=new Date(startStr+'T00:00:00'); const now=new Date(); now.setHours(0,0,0,0);
+  const diff=Math.floor((now-start)/86400000);
+  if(diff<0)         return {state:'before', start:start, days:-diff};
+  if(diff>NUM_DAYS)  return {state:'after',  start:start};   // 주말(토·일)까지 지나면 종료
+  return {state:'active', idx:Math.min(diff,NUM_DAYS-1)};
+}
+/* 시작 전·종료·준비중 안내 화면 표시 */
+function showNotice(st){
+  const fmt=d=>(d.getMonth()+1)+'월 '+d.getDate()+'일';
+  const title=document.getElementById('noticeTitle');
+  const heading=document.getElementById('noticeHeading');
+  const desc=document.getElementById('noticeDesc');
+  const note=document.getElementById('noticeNote');
+  if(st.state==='before'){
+    title.innerHTML='아직 미션이<br><b>시작되지 않았어요</b>';
+    heading.textContent='미션 시작 전이에요';
+    desc.textContent=fmt(st.start)+'부터 시작해요. ('+st.days+'일 남음)';
+    note.textContent='🍯 시작일이 되면 이 화면에서 바로 오늘의 미션이 열려요.';
+  }else if(st.state==='after'){
+    title.innerHTML='이번 시즌이<br><b>마무리되었어요</b>';
+    heading.textContent='미션 기간이 끝났어요';
+    desc.textContent='한 주 동안 함께해 주셔서 고맙습니다. 다음 시즌에 또 만나요!';
+    note.textContent='🤍 그동안의 소중한 기록은 잘 보관돼요.';
+  }else{ // notready
+    title.innerHTML='미션을<br><b>준비하고 있어요</b>';
+    heading.textContent='조금만 기다려 주세요';
+    desc.textContent='담당 선생님이 미션 시작일을 설정하면 바로 열려요.';
+    note.textContent='🍯 설정이 완료되면 이 화면에서 오늘의 미션이 열려요.';
+  }
+  show('notice');
 }
 
 /* ===================== 미션 렌더 ===================== */
@@ -536,14 +586,19 @@ async function runFirebase(){
   // 5) 메인 화면 진입 + 미션 불러오기 + 완료한 날 수 집계
   async function enterApp(){
     // 관리자가 저장한 시즌 미션·시작일 불러오기
+    let startDate=null;
     try{
       const cfg=await getDoc(doc(db,'config',SEASON));
       if(cfg.exists()){
         const c=cfg.data();
         if(c.missions && c.missions.length===NUM_DAYS) MISSIONS=c.missions;
-        if(c.startDate) todayIdx=computeToday(c.startDate); // 시작일 기준 오늘 미션 자동 선택
+        if(c.startDate) startDate=c.startDate;
       }
     }catch(e){}
+    // 시작일 기준 상태 판정 — 시작 전·종료·미설정이면 안내 화면, 진행 중일 때만 미션 열기
+    const st=programStatus(startDate);
+    if(st.state!=='active'){ showNotice(st); return; }
+    todayIdx=st.idx; // 시작일 기준 오늘 미션 자동 선택
     renderMission();
     const q=query(collection(db,'entries'),where('uid','==',uid),where('season','==',SEASON));
     const res=await getDocs(q);
@@ -572,6 +627,7 @@ async function runFirebase(){
   };
 
   document.getElementById('signoutBtn').onclick=()=>signOut(auth);
+  document.getElementById('noticeSignout').onclick=()=>signOut(auth);
 }
 
 /* ===================== 시작 ===================== */
