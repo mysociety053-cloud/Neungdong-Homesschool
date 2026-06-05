@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>잠시 멈추면, 가족이 보여요</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFCF6;--paper-soft:#FFFFFF;--ink:#43372C;--ink-soft:#9A8975;
+    --honey:#E5A93F;--honey-deep:#CC8A2C;--honey-wash:#FBEFD6;--line:#F0E8D8;
+    --stop:#BBA188;--green:#7C9A6B;--shadow:0 14px 34px -20px rgba(120,85,30,.32);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{font-family:'Gowun Dodum',sans-serif;color:var(--ink);background:var(--paper);
+    -webkit-font-smoothing:antialiased;display:flex;justify-content:center;}
+  .phone{width:100%;max-width:430px;min-height:100vh;background:var(--paper);
+    position:relative;overflow-x:hidden;padding:0 22px 40px;}
+  [hidden]{display:none !important;}
+
+  /* ---------- shared headings ---------- */
+  .eyebrow{font-size:12px;letter-spacing:.22em;color:var(--honey-deep);font-weight:700;
+    text-transform:uppercase;display:inline-flex;align-items:center;gap:8px;}
+  .eyebrow::before,.eyebrow::after{content:"";width:16px;height:1px;background:var(--honey-deep);opacity:.5;}
+  .slogan{font-family:'Gowun Batang',serif;font-weight:700;font-size:30px;line-height:1.34;
+    margin-top:14px;letter-spacing:-.01em;}
+  .slogan b{color:var(--honey-deep);}
+
+  /* ---------- auth & setup ---------- */
+  .gate{padding-top:64px;text-align:center;}
+  .gate .lead{font-size:13.5px;color:var(--ink-soft);margin-top:14px;line-height:1.6;}
+  .gate-card{background:var(--paper-soft);border:1px solid var(--line);border-radius:22px;
+    box-shadow:var(--shadow);padding:24px 20px;margin-top:28px;text-align:left;}
+  .gate-card h2{font-family:'Gowun Batang',serif;font-size:19px;margin-bottom:4px;}
+  .gate-card .desc{font-size:12.5px;color:var(--ink-soft);margin-bottom:18px;}
+  .in-label{font-size:13px;font-weight:700;margin-bottom:7px;display:block;}
+  .in{width:100%;border:1px solid var(--line);background:#FFFDFA;border-radius:13px;
+    padding:14px 15px;font-family:inherit;font-size:15px;color:var(--ink);outline:none;
+    transition:border-color .2s,background .2s;}
+  .in::placeholder{color:#C2B299;}
+  .in:focus{border-color:var(--honey);background:#fff;}
+  .in + .in-label{margin-top:15px;}
+  .row3{display:flex;gap:10px;}
+  .row3 .col{flex:1;}
+  .btn{width:100%;margin-top:20px;border:none;border-radius:16px;cursor:pointer;
+    background:linear-gradient(135deg,var(--honey),var(--honey-deep));color:#fff;
+    font-family:'Gowun Batang',serif;font-weight:700;font-size:16px;padding:16px;letter-spacing:.03em;
+    box-shadow:0 10px 22px -10px rgba(200,133,42,.8);transition:transform .12s,filter .2s;}
+  .btn:active{transform:translateY(1px) scale(.997);}
+  .btn:disabled{filter:grayscale(.4) opacity(.55);box-shadow:none;cursor:default;}
+  .note{font-size:11.5px;color:var(--ink-soft);line-height:1.55;margin-top:12px;
+    background:var(--honey-wash);border-radius:11px;padding:10px 12px;}
+  .msg{font-size:13px;color:var(--green);margin-top:14px;line-height:1.5;display:none;}
+  .msg.show{display:block;}
+
+  /* ---------- app header ---------- */
+  header{padding:30px 4px 8px;text-align:center;}
+  .flow{margin:16px auto 0;font-size:12.5px;color:var(--ink-soft);
+    display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;}
+  .flow i{color:var(--honey);font-style:normal;}
+
+  /* ---------- progress ---------- */
+  .progress{margin:22px 2px 0;display:flex;align-items:center;justify-content:space-between;}
+  .progress .label{font-size:13px;color:var(--ink-soft);}
+  .progress .label b{color:var(--ink);font-weight:700;}
+  .dots{display:flex;gap:7px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--honey-wash);border:1.5px solid var(--line);}
+  .dot.done{background:var(--honey);border-color:var(--honey);}
+  .dot.today{background:var(--paper-soft);border-color:var(--honey-deep);box-shadow:0 0 0 3px rgba(224,162,59,.25);}
+  .seasonstat{margin:10px 2px 0;font-size:12.5px;color:var(--honey-deep);font-weight:700;
+    background:var(--honey-wash);border-radius:11px;padding:9px 13px;text-align:center;}
+
+  /* ---------- mission card ---------- */
+  .card{background:var(--paper-soft);border:1px solid var(--line);border-radius:24px;
+    box-shadow:var(--shadow);margin-top:16px;overflow:hidden;}
+  .mission{padding:24px 22px 22px;}
+  .mtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .mday{font-family:'Gowun Batang',serif;font-size:15px;color:var(--ink-soft);}
+  .tag{font-size:11.5px;font-weight:700;color:var(--honey-deep);background:var(--honey-wash);
+    padding:5px 11px;border-radius:999px;letter-spacing:.02em;}
+  .mtitle{font-family:'Gowun Batang',serif;font-size:23px;font-weight:700;margin-bottom:20px;}
+  .step{display:flex;gap:13px;align-items:flex-start;}
+  .step + .step{margin-top:14px;}
+  .badge{flex:none;width:46px;height:46px;border-radius:14px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;font-size:10px;font-weight:700;line-height:1;}
+  .badge .ic{font-size:18px;margin-bottom:3px;}
+  .b-stop{background:#F1EBE0;color:var(--stop);}
+  .b-fill{background:linear-gradient(135deg,#F6D79B,#EBB35B);color:#6b4a16;}
+  .stext .k{font-size:12px;font-weight:700;letter-spacing:.04em;margin-bottom:3px;}
+  .b-stop ~ .stext .k{color:var(--stop);}
+  .stext .v{font-size:15px;line-height:1.5;}
+  .step.fill .k{color:var(--honey-deep);}
+  .daynotice{margin-top:18px;font-size:12px;color:var(--ink-soft);line-height:1.55;
+    background:#FBF3E2;border:1px solid var(--line);border-radius:12px;padding:11px 13px;}
+  .daynotice b{color:var(--honey-deep);}
+
+  /* ---------- log ---------- */
+  .log{border-top:1px dashed var(--line);padding:22px;}
+  .log h3{font-family:'Gowun Batang',serif;font-size:16px;margin-bottom:4px;display:flex;align-items:center;gap:7px;}
+  .log h3 .hic{color:var(--honey);}
+  .log .sub{font-size:12px;color:var(--ink-soft);margin-bottom:16px;}
+  .req{color:var(--honey-deep);font-weight:700;}
+  .photo{position:relative;width:100%;aspect-ratio:4/3;border-radius:18px;border:2px dashed var(--line);
+    background:#FFFDFA;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;color:var(--ink-soft);transition:border-color .2s,background .2s;}
+  .photo:hover{border-color:var(--honey);background:#FBF3E2;}
+  .photo .pic{font-size:30px;margin-bottom:8px;}
+  .photo .ptxt{font-size:13px;}
+  .photo .ptxt-sub{font-size:11.5px;color:var(--honey-deep);margin-top:5px;}
+  .photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;}
+  .photo.has img{display:block;}
+  .photo.has .ph-empty{display:none;}
+  .photo .retake{position:absolute;right:10px;bottom:10px;background:rgba(59,47,38,.78);color:#fff;
+    font-size:11.5px;padding:6px 12px;border-radius:999px;display:none;backdrop-filter:blur(4px);}
+  .photo.has .retake{display:block;}
+  #file{display:none;}
+  .privacy{font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin-top:9px;
+    background:var(--honey-wash);border-radius:11px;padding:9px 12px;}
+  .field{margin-top:15px;}
+  .field label{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;margin-bottom:7px;}
+  .who{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex:none;}
+  .who.parent{background:var(--honey-wash);}
+  .who.child{background:#E4EEDD;}
+  .field input{width:100%;border:1px solid var(--line);background:#FFFDFA;border-radius:13px;
+    padding:13px 15px;font-family:inherit;font-size:14.5px;color:var(--ink);outline:none;transition:border-color .2s,background .2s;}
+  .field input::placeholder{color:#C2B299;}
+  .field input:focus{border-color:var(--honey);background:#fff;}
+  .weekly{margin-top:18px;background:var(--honey-wash);border:1px solid #F2DFB6;border-radius:16px;padding:15px 15px 16px;}
+  .weekly label{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700;color:var(--honey-deep);}
+  .weekly .wic{font-size:15px;}
+  .weekly .wsub{font-size:11.5px;color:var(--ink-soft);margin:5px 0 10px;}
+  .weekly input{width:100%;border:1px solid #EAD3A0;background:#fff;border-radius:12px;
+    padding:13px 15px;font-family:inherit;font-size:14.5px;color:var(--ink);outline:none;transition:border-color .2s;}
+  .weekly input::placeholder{color:#CBB488;}
+  .weekly input:focus{border-color:var(--honey-deep);}
+  .weekly .promise-label{margin-top:15px;}
+  .weekly-quote{display:none;}
+  .weekly-quote .qmark{color:var(--honey-deep);font-weight:700;}
+  .submit{width:100%;margin-top:22px;border:none;border-radius:16px;cursor:pointer;
+    background:linear-gradient(135deg,var(--honey),var(--honey-deep));color:#fff;
+    font-family:'Gowun Batang',serif;font-weight:700;font-size:16px;padding:16px;letter-spacing:.03em;
+    box-shadow:0 10px 22px -10px rgba(200,133,42,.8);transition:transform .12s,filter .2s;}
+  .submit:active{transform:translateY(1px) scale(.997);}
+  .submit:disabled{filter:grayscale(.4) opacity(.55);box-shadow:none;cursor:default;}
+  .gate-hint{font-size:12px;color:var(--ink-soft);text-align:center;margin-top:10px;display:none;}
+  .gate-hint.show{display:block;}
+
+  /* ---------- done ---------- */
+  .done-view{padding:30px 22px 26px;text-align:center;display:none;}
+  .done-view.show{display:block;animation:rise .5s ease both;}
+  @keyframes rise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+  .seal{width:62px;height:62px;border-radius:50%;margin:0 auto 14px;
+    background:linear-gradient(135deg,#F6D79B,#E0A23B);display:flex;align-items:center;justify-content:center;
+    font-size:30px;box-shadow:0 10px 20px -8px rgba(200,133,42,.7);}
+  .done-view h3{font-family:'Gowun Batang',serif;font-size:21px;margin-bottom:6px;}
+  .done-view p{font-size:13px;color:var(--ink-soft);margin-bottom:20px;}
+  .memo{background:#FCF8EF;border:1px solid var(--line);border-radius:18px;padding:14px;text-align:left;}
+  .memo .mimg{width:100%;aspect-ratio:4/3;border-radius:12px;object-fit:cover;margin-bottom:12px;background:#EFE7D5;}
+  .quote{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5;}
+  .quote + .quote{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+  .quote .qmark{font-size:12px;color:var(--ink-soft);flex:none;padding-top:1px;}
+  .again{margin-top:18px;background:none;border:none;color:var(--honey-deep);font-family:inherit;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+  .lock-note{margin-top:16px;font-size:11.5px;color:var(--ink-soft);line-height:1.5;}
+
+  footer{text-align:center;margin-top:26px;font-size:11.5px;color:#BBA888;line-height:1.6;}
+  .signout{display:block;margin:14px auto 0;background:none;border:none;color:#C2B299;font-family:inherit;font-size:11.5px;cursor:pointer;text-decoration:underline;}
+
+  /* ---------- demo banner ---------- */
+  #demoBanner{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:50;
+    background:rgba(67,55,44,.92);color:#FBEFD6;font-size:11.5px;padding:9px 16px;border-radius:999px;
+    box-shadow:0 8px 20px -8px rgba(0,0,0,.4);backdrop-filter:blur(4px);max-width:90%;text-align:center;}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- ===================== 로그인 화면 ===================== -->
+  <section id="authScreen" class="screen">
+    <div class="gate">
+      <span class="eyebrow">능동 디지털 인성교육 프로젝트</span>
+      <h1 class="slogan">잠시 멈추면,<br><b>가족이 보여요</b></h1>
+      <p class="lead">이메일로 간편하게 시작해요.<br>한 번 설정하면 다음부터는 이메일만 입력하면 돼요.</p>
+
+      <div class="gate-card">
+        <h2>이메일로 시작하기</h2>
+        <p class="desc">입력하신 주소로 확인 링크를 보내드려요</p>
+        <label class="in-label" for="email">학부모 이메일</label>
+        <input class="in" id="email" type="email" inputmode="email" placeholder="example@email.com">
+        <button class="btn" id="loginBtn">시작하기</button>
+        <p class="msg" id="authMsg"></p>
+        <p class="note">🔒 이메일은 가정을 구분하고 활동을 저장하는 용도로만 쓰이며, 외부에 공개되지 않아요.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 최초 설정 화면 ===================== -->
+  <section id="setupScreen" class="screen" hidden>
+    <div class="gate">
+      <span class="eyebrow">처음 한 번만</span>
+      <h1 class="slogan">우리 아이를<br><b>알려주세요</b></h1>
+      <p class="lead">학년·반·번호만 입력하면 끝이에요.</p>
+
+      <div class="gate-card">
+        <h2>자녀 정보 설정</h2>
+        <p class="desc">이 정보로 우리 가족의 기록이 묶여요</p>
+        <label class="in-label">학년 · 반 · 번호</label>
+        <div class="row3">
+          <div class="col">
+            <select class="in" id="grade">
+              <option value="">학년</option>
+              <option>1</option><option>2</option><option>3</option>
+              <option>4</option><option>5</option><option>6</option>
+            </select>
+          </div>
+          <div class="col"><input class="in" id="classNo" type="number" min="1" inputmode="numeric" placeholder="반"></div>
+          <div class="col"><input class="in" id="studentNo" type="number" min="1" inputmode="numeric" placeholder="번호"></div>
+        </div>
+        <button class="btn" id="setupBtn" disabled>설정 완료</button>
+        <p class="note">🔒 자녀의 이름은 받지 않아요. 학년·반·번호까지만 저장돼요.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 메인(미션) 화면 ===================== -->
+  <section id="appScreen" class="screen" hidden>
+    <header>
+      <span class="eyebrow">능동 디지털 인성교육 프로젝트</span>
+      <h1 class="slogan">잠시 멈추면,<br><b>가족이 보여요</b></h1>
+      <div class="flow"><span>📴 멈춤</span><i>→</i><span>🍯 채움</span><i>→</i><span>🤍 신뢰·공감</span></div>
+    </header>
+
+    <div class="progress">
+      <div class="label" id="dayLabel"></div>
+      <div class="dots" id="dots"></div>
+    </div>
+    <div class="seasonstat" id="seasonStat"></div>
+
+    <div class="card">
+      <!-- mission -->
+      <div class="mission" id="missionBlock">
+        <div class="mtop">
+          <span class="mday" id="mDay"></span>
+          <span class="tag" id="mTag"></span>
+        </div>
+        <div class="mtitle" id="mTitle"></div>
+        <div class="step">
+          <div class="badge b-stop"><span class="ic">📴</span>멈춤</div>
+          <div class="stext"><div class="k">잠깐 멈춰요</div><div class="v" id="mStop"></div></div>
+        </div>
+        <div class="step fill">
+          <div class="badge b-fill"><span class="ic">🍯</span>채움</div>
+          <div class="stext"><div class="k">함께 채워요</div><div class="v" id="mFill"></div></div>
+        </div>
+        <p class="daynotice">⏰ 오늘 미션은 <b>오늘만</b> 기록·수정할 수 있어요. 날짜가 지나면 확정되어 다시 채울 수 없으니, 잊지 말고 그날그날 함께해주세요.</p>
+      </div>
+
+      <!-- log -->
+      <div class="log" id="logBlock">
+        <h3><span class="hic">✎</span> 오늘의 한 칸 기록</h3>
+        <p class="sub">상품을 받으려면 <span class="req">모든 칸을 채워야</span> 완료돼요</p>
+
+        <label class="photo" id="photoBox" for="file">
+          <div class="ph-empty">
+            <div class="pic">📷</div>
+            <div class="ptxt">함께한 순간을 사진 한 장으로</div>
+            <div class="ptxt-sub">얼굴은 나오지 않게 찍어주세요</div>
+          </div>
+          <img id="preview" alt="오늘의 사진">
+          <span class="retake">다시 찍기</span>
+        </label>
+        <input type="file" id="file" accept="image/*">
+        <p class="privacy">🔒 초상권 보호를 위해 얼굴이 보이지 않는 사진(손·뒷모습·함께한 물건 등)을 올려주세요.</p>
+
+        <div class="field">
+          <label><span class="who parent">👩</span> 엄마·아빠 한 줄</label>
+          <input id="parentLine" type="text" maxlength="60" placeholder="오늘 함께한 시간, 어떠셨나요?">
+        </div>
+        <div class="field">
+          <label><span class="who child">🧒</span> 우리 아이 한 줄</label>
+          <input id="childLine" type="text" maxlength="60" placeholder="오늘 가장 좋았던 점은?">
+        </div>
+
+        <div class="weekly" id="weeklyBlock">
+          <label><span class="wic">🍯</span> 이번 주, 우리 가족 한마디</label>
+          <p class="wsub">일주일의 실천을 돌아보며 한 줄 남겨요</p>
+          <input id="weeklyLine" type="text" maxlength="70" placeholder="한 주 동안 함께하며 느낀 점은?">
+          <label class="promise-label"><span class="wic">🤝</span> 앞으로도 이어갈 우리 가족 약속</label>
+          <p class="wsub">이 한 주에 정한 약속 하나를 적어요</p>
+          <input id="promiseLine" type="text" maxlength="70" placeholder="예) 저녁 먹을 땐 다 같이 폰 내려놓기">
+        </div>
+
+        <button class="submit" id="submitBtn" disabled>오늘 미션 완료하기 🍯</button>
+        <p class="gate-hint" id="gateHint">아직 비어 있는 칸이 있어요</p>
+      </div>
+
+      <!-- done -->
+      <div class="done-view" id="doneView">
+        <div class="seal">🍯</div>
+        <h3>오늘 하루, 가족의 한 칸이 채워졌어요</h3>
+        <p>멈춘 시간이 가족의 기억으로 남았어요</p>
+        <div class="memo">
+          <img class="mimg" id="memoImg" alt="">
+          <div class="quote"><span class="qmark">엄마·아빠</span><span id="memoParent"></span></div>
+          <div class="quote"><span class="qmark">우리 아이</span><span id="memoChild"></span></div>
+          <div class="quote weekly-quote" id="memoWeeklyWrap"><span class="qmark">이번 주</span><span id="memoWeekly"></span></div>
+          <div class="quote weekly-quote" id="memoPromiseWrap"><span class="qmark">우리 약속</span><span id="memoPromise"></span></div>
+        </div>
+        <button class="again" id="againBtn">오늘 기록 수정하기</button>
+        <p class="lock-note">🔒 오늘 안에서는 수정할 수 있어요. 날짜가 지나면 기록이 확정돼요.</p>
+      </div>
+    </div>
+
+    <footer>능동초등학교 · 가족이 함께 쓰는 디지털 인성 한 칸<br>화면을 끄고, 마음을 켜요</footer>
+    <button class="signout" id="signoutBtn">로그아웃</button>
+  </section>
+
+  <div id="demoBanner" hidden>🔧 데모 미리보기 — Firebase 키를 넣고 배포하면 실제로 저장돼요</div>
+</div>
+
+<script>
+/* ===================================================================
+   설정값 — 배포 시 여기만 채우면 실제로 작동합니다
+   Firebase 콘솔 > 프로젝트 설정 > 웹 앱에서 복사
+=================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCHUXPjWyVdaPcKhgEk6PtstJJ4zI14h4A",
+  authDomain: "class-relation2.firebaseapp.com",
+  projectId: "class-relation2",
+  storageBucket: "class-relation2.firebasestorage.app",
+  messagingSenderId: "90743477473",
+  appId: "1:90743477473:web:b9ae303904acacade6d3a0",
+  measurementId: "G-WQ1929803W"
+};
+const SEASON = "2026-1";          // 시즌 구분(1학기 / 2학기 등)
+const NUM_DAYS = 6;               // 월·화·수·목·금·주말 = 6일
+const COMPLETE_THRESHOLD = 5;     // 5일 이상 완료하면 완주
+let   todayIdx = 5;               // 데모: 주말 미션 표시 / 실제 배포 시 날짜로 자동 계산
+
+// 키가 채워져 있으면 실제 모드, 아니면 데모 모드
+const firebaseReady = !firebaseConfig.apiKey.includes("여기에");
+
+/* ===================== 미션 데이터 (기본값) ===================== */
+const DEFAULT_MISSIONS = [
+  {day:"월요일 · 첫째 날", tag:"🌱 자기인식", title:"우리 가족, 다짐의 시작",
+   stop:"오늘 저녁, 온 가족이 폰을 내려놓고 둘러앉기",
+   fill:"그동안 우리 폰 사용 습관과 함께 못한 저녁 시간을 솔직하게 돌아보고, 이번 한 주의 각오를 나눠요"},
+  {day:"화요일 · 둘째 날", tag:"🌱 신뢰·관계", title:"밥상 위 대화",
+   stop:"저녁 한 끼, 온 가족 폰을 바구니에 모으기",
+   fill:"오늘 있었던 일을 한 가지씩 돌아가며 이야기해요"},
+  {day:"수요일 · 셋째 날", tag:"🌱 자기조절", title:"잘 자, 화면아",
+   stop:"잠들기 1시간 전, 온 가족 화면 끄기",
+   fill:"그 시간에 책을 읽어주거나 도란도란 대화를 나눠요"},
+  {day:"목요일 · 넷째 날", tag:"🌱 공감·존중", title:"우리 가족 고운 말 약속판",
+   stop:"단톡방·화면을 잠시 내려놓고 둘러앉기",
+   fill:"고운 말 약속을 함께 정하고, 약속판으로 꾸며 잘 보이는 곳에 걸어요"},
+  {day:"금요일 · 다섯째 날", tag:"🌱 소통·협력", title:"보드게임 한 판!",
+   stop:"각자 보던 화면을 끄고 거실에 모이기",
+   fill:"온 가족이 보드게임 한 판! 함께 웃고 이야기하며 즐겨요"},
+  {day:"주말 · 한 주의 마무리", tag:"🌱 가족 시간·지속", title:"주말은 가족과 함께",
+   stop:"주말에 시간을 정해 다 같이 폰 내려놓기",
+   fill:"나들이·요리·놀이로 시간을 채우고, 앞으로도 이어갈 우리 가족 약속 하나를 함께 정해요"}
+];
+let MISSIONS = DEFAULT_MISSIONS.slice(); // 관리자가 저장한 미션이 있으면 실제 모드에서 교체됨
+
+/* ===================== 화면 전환 ===================== */
+const screens = {auth:document.getElementById('authScreen'),
+                 setup:document.getElementById('setupScreen'),
+                 app:document.getElementById('appScreen')};
+function show(name){for(const k in screens){screens[k].hidden = (k!==name);}}
+
+/* ===================== DOM refs ===================== */
+const fileInput=document.getElementById('file');
+const photoBox=document.getElementById('photoBox');
+const preview=document.getElementById('preview');
+const parentLine=document.getElementById('parentLine');
+const childLine=document.getElementById('childLine');
+const weeklyLine=document.getElementById('weeklyLine');
+const promiseLine=document.getElementById('promiseLine');
+const submitBtn=document.getElementById('submitBtn');
+const gateHint=document.getElementById('gateHint');
+let photoData=null, photoFile=null;
+let isWeekend = (todayIdx === NUM_DAYS-1);
+/* 시작일 기준으로 오늘이 며칠째 미션인지 계산 (월요일 시작 가정) */
+function computeToday(startStr){
+  const start=new Date(startStr+'T00:00:00'); const now=new Date(); now.setHours(0,0,0,0);
+  const diff=Math.floor((now-start)/86400000);
+  if(diff<=0) return 0; if(diff>=NUM_DAYS-1) return NUM_DAYS-1; return diff;
+}
+
+/* ===================== 미션 렌더 ===================== */
+function renderMission(){
+  isWeekend = (todayIdx === NUM_DAYS-1);
+  const m=MISSIONS[todayIdx];
+  document.getElementById('mDay').textContent=m.day;
+  document.getElementById('mTag').textContent=m.tag;
+  document.getElementById('mTitle').textContent=m.title;
+  document.getElementById('mStop').textContent=m.stop;
+  document.getElementById('mFill').textContent=m.fill;
+  document.getElementById('weeklyBlock').style.display = isWeekend ? 'block' : 'none';
+  document.getElementById('dayLabel').innerHTML =
+    '1학기 시즌 · <b>'+(isWeekend?'마지막 날':(todayIdx+1)+'일째')+'</b> 함께하는 중';
+}
+function renderProgress(completedCount){
+  const dots=document.getElementById('dots');
+  dots.innerHTML='';
+  for(let i=0;i<NUM_DAYS;i++){
+    const d=document.createElement('span');
+    d.className='dot'+(i<completedCount?' done':i===todayIdx?' today':'');
+    dots.appendChild(d);
+  }
+  const done = completedCount>=COMPLETE_THRESHOLD;
+  document.getElementById('seasonStat').textContent =
+    done ? '🎁 '+completedCount+'일 완료 · 완주를 달성했어요!'
+         : completedCount+'일 완료 · '+COMPLETE_THRESHOLD+'일이면 완주예요 🎁';
+}
+
+/* ===================== 완료 조건(모든 칸) ===================== */
+function checkReady(){
+  let ok = photoData && parentLine.value.trim() && childLine.value.trim();
+  if(isWeekend) ok = ok && weeklyLine.value.trim() && promiseLine.value.trim();
+  submitBtn.disabled=!ok;
+  gateHint.classList.toggle('show',!ok);
+}
+fileInput.addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  photoFile=f;
+  const r=new FileReader();
+  r.onload=ev=>{photoData=ev.target.result;preview.src=photoData;photoBox.classList.add('has');checkReady();};
+  r.readAsDataURL(f);
+});
+[parentLine,childLine,weeklyLine,promiseLine].forEach(el=>el.addEventListener('input',checkReady));
+
+/* ===================== 완료 화면 표시 ===================== */
+function showDone(){
+  document.getElementById('memoParent').textContent=parentLine.value.trim()||'(기록 없음)';
+  document.getElementById('memoChild').textContent=childLine.value.trim()||'(기록 없음)';
+  const wWrap=document.getElementById('memoWeeklyWrap');
+  if(isWeekend && weeklyLine.value.trim()){document.getElementById('memoWeekly').textContent=weeklyLine.value.trim();wWrap.style.display='flex';}else{wWrap.style.display='none';}
+  const pWrap=document.getElementById('memoPromiseWrap');
+  if(isWeekend && promiseLine.value.trim()){document.getElementById('memoPromise').textContent=promiseLine.value.trim();pWrap.style.display='flex';}else{pWrap.style.display='none';}
+  const mi=document.getElementById('memoImg');
+  if(photoData){mi.src=photoData;mi.style.display='block';}else{mi.style.display='none';}
+  document.getElementById('missionBlock').style.display='none';
+  document.getElementById('logBlock').style.display='none';
+  document.getElementById('doneView').classList.add('show');
+}
+document.getElementById('againBtn').addEventListener('click',()=>{
+  document.getElementById('doneView').classList.remove('show');
+  document.getElementById('missionBlock').style.display='block';
+  document.getElementById('logBlock').style.display='block';
+});
+
+/* 설정 화면 입력 검증 */
+const gradeEl=document.getElementById('grade'),classEl=document.getElementById('classNo'),numEl=document.getElementById('studentNo');
+function checkSetup(){document.getElementById('setupBtn').disabled=!(gradeEl.value&&classEl.value&&numEl.value);}
+[gradeEl,classEl,numEl].forEach(el=>el.addEventListener('input',checkSetup));
+
+/* ===================================================================
+   데모 모드 — Firebase 키가 없을 때 화면 흐름만 미리보기
+=================================================================== */
+function runDemo(){
+  document.getElementById('demoBanner').hidden=false;
+  show('auth');
+  document.getElementById('loginBtn').onclick=()=>{
+    const m=document.getElementById('authMsg');
+    m.textContent='(데모) 실제 배포 시에는 이 주소로 확인 메일이 전송돼요. 다음 화면으로 넘어갑니다.';
+    m.classList.add('show');
+    setTimeout(()=>show('setup'),700);
+  };
+  document.getElementById('setupBtn').onclick=()=>{
+    renderMission(); renderProgress(todayIdx); show('app');
+  };
+  submitBtn.onclick=showDone;
+  document.getElementById('signoutBtn').onclick=()=>{show('auth');};
+}
+
+/* ===================================================================
+   실제 모드 — Firebase 연결 (이메일 링크 로그인 + Firestore + Storage)
+=================================================================== */
+async function runFirebase(){
+  const [{initializeApp},
+         {getAuth,sendSignInLinkToEmail,isSignInWithEmailLink,signInWithEmailLink,onAuthStateChanged,signOut},
+         {getFirestore,doc,getDoc,setDoc,collection,query,where,getDocs},
+         {getStorage,ref,uploadBytes,getDownloadURL}] = await Promise.all([
+    import("https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js"),
+    import("https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js"),
+    import("https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js"),
+    import("https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js")
+  ]);
+
+  const app=initializeApp(firebaseConfig);
+  const auth=getAuth(app), db=getFirestore(app), storage=getStorage(app);
+  const acs={url:window.location.href, handleCodeInApp:true};
+  let uid=null, profile=null;
+
+  // 1) 로그인: 이메일로 링크 보내기
+  document.getElementById('loginBtn').onclick=async()=>{
+    const email=document.getElementById('email').value.trim();
+    const m=document.getElementById('authMsg');
+    if(!email){m.textContent='이메일을 입력해주세요.';m.classList.add('show');return;}
+    try{
+      await sendSignInLinkToEmail(auth,email,acs);
+      window.localStorage.setItem('emailForSignIn',email);
+      m.textContent='확인 메일을 보냈어요. 메일의 링크를 눌러 로그인해주세요.';
+      m.classList.add('show');
+    }catch(e){m.textContent='메일 전송에 실패했어요: '+e.message;m.classList.add('show');}
+  };
+
+  // 2) 메일 링크로 돌아온 경우 자동 로그인 처리
+  if(isSignInWithEmailLink(auth,window.location.href)){
+    let email=window.localStorage.getItem('emailForSignIn');
+    if(!email) email=window.prompt('확인을 위해 이메일을 다시 입력해주세요');
+    try{ await signInWithEmailLink(auth,email,window.location.href);
+         window.localStorage.removeItem('emailForSignIn'); }catch(e){}
+  }
+
+  // 3) 로그인 상태 감지 → 설정 여부에 따라 화면 분기
+  onAuthStateChanged(auth,async(user)=>{
+    if(!user){show('auth');return;}
+    uid=user.uid;
+    const snap=await getDoc(doc(db,'families',uid));
+    if(snap.exists()){ profile=snap.data(); await enterApp(); }
+    else { show('setup'); }
+  });
+
+  // 4) 최초 설정 저장 (학년·반·번호, 실명 없음)
+  document.getElementById('setupBtn').onclick=async()=>{
+    profile={email:auth.currentUser.email,grade:gradeEl.value,classNo:classEl.value,studentNo:numEl.value,createdAt:Date.now()};
+    await setDoc(doc(db,'families',uid),profile);
+    await enterApp();
+  };
+
+  // 5) 메인 화면 진입 + 미션 불러오기 + 완료한 날 수 집계
+  async function enterApp(){
+    // 관리자가 저장한 시즌 미션·시작일 불러오기
+    try{
+      const cfg=await getDoc(doc(db,'config',SEASON));
+      if(cfg.exists()){
+        const c=cfg.data();
+        if(c.missions && c.missions.length===NUM_DAYS) MISSIONS=c.missions;
+        if(c.startDate) todayIdx=computeToday(c.startDate); // 시작일 기준 오늘 미션 자동 선택
+      }
+    }catch(e){}
+    renderMission();
+    const q=query(collection(db,'entries'),where('uid','==',uid),where('season','==',SEASON));
+    const res=await getDocs(q);
+    renderProgress(res.size);
+    show('app');
+  }
+
+  // 6) 미션 완료 저장 (사진 → Storage, 소감 → Firestore)
+  submitBtn.onclick=async()=>{
+    submitBtn.disabled=true;
+    try{
+      const path='entries/'+uid+'/'+SEASON+'_day'+todayIdx+'.jpg';
+      const sref=ref(storage,path);
+      await uploadBytes(sref,photoFile);
+      const photoURL=await getDownloadURL(sref);
+      const id=uid+'_'+SEASON+'_day'+todayIdx; // 같은 날 중복 저장 방지
+      await setDoc(doc(db,'entries',id),{
+        uid, email:profile.email, grade:profile.grade, classNo:profile.classNo, studentNo:profile.studentNo,
+        season:SEASON, day:todayIdx,
+        parentLine:parentLine.value.trim(), childLine:childLine.value.trim(),
+        weeklyLine:isWeekend?weeklyLine.value.trim():'', promiseLine:isWeekend?promiseLine.value.trim():'',
+        photoURL, completed:true, createdAt:Date.now()
+      });
+      showDone();
+    }catch(e){ alert('저장에 실패했어요: '+e.message); submitBtn.disabled=false; }
+  };
+
+  document.getElementById('signoutBtn').onclick=()=>signOut(auth);
+}
+
+/* ===================== 시작 ===================== */
+if(firebaseReady){ runFirebase().catch(err=>{console.error(err);runDemo();}); }
+else { runDemo(); }
+</script>
+</body>
+</html>

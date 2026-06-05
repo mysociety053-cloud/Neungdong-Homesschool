@@ -1,0 +1,45 @@
+rules_version = '2';
+
+// 능동 디지털 인성교육 프로젝트 — Firestore 보안 규칙
+// 아이들의 기록·이메일이 외부로 새지 않도록 잠그는 규칙입니다.
+// ⚠️ 아래 ADMIN 이메일을 실제 관리자(담당 선생님) 이메일로 바꿔주세요.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // 관리자 이메일 목록 (admin.html 의 ADMIN_EMAILS 와 동일하게 유지)
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email in [
+        'mysociety053@gmail.com'
+      ];
+    }
+
+    // 가정 프로필: 본인만 읽기/쓰기, 관리자는 전체 읽기
+    match /families/{uid} {
+      allow read:  if isAdmin() || (isSignedIn() && request.auth.uid == uid);
+      allow write: if isSignedIn()
+                   && request.auth.uid == uid
+                   && request.resource.data.email == request.auth.token.email;
+    }
+
+    // 일일 기록: 본인 기록만 작성/수정, 관리자는 전체 읽기, 삭제 불가
+    match /entries/{entryId} {
+      allow read:   if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if isSignedIn()
+                    && resource.data.uid == request.auth.uid
+                    && request.resource.data.uid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // 시즌 설정(미션·시작일): 로그인하면 읽기, 관리자만 쓰기
+    match /config/{season} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

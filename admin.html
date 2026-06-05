@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리자 · 능동 디지털 인성교육 프로젝트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFCF6;--paper-soft:#FFFFFF;--ink:#43372C;--ink-soft:#9A8975;
+    --honey:#E5A93F;--honey-deep:#CC8A2C;--honey-wash:#FBEFD6;--line:#EEE5D3;
+    --green:#6E9A5E;--green-wash:#E7F0DF;--shadow:0 14px 34px -22px rgba(120,85,30,.3);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Gowun Dodum',sans-serif;color:var(--ink);background:var(--paper);
+    -webkit-font-smoothing:antialiased;padding:0 0 60px;}
+  [hidden]{display:none !important;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px;}
+
+  .topbar{background:var(--paper-soft);border-bottom:1px solid var(--line);padding:16px 0 0;margin-bottom:26px;}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .brand .eyebrow{font-size:11px;letter-spacing:.2em;color:var(--honey-deep);font-weight:700;text-transform:uppercase;}
+  .brand h1{font-family:'Gowun Batang',serif;font-size:20px;margin-top:2px;}
+  .brand h1 span{color:var(--honey-deep);}
+  .topbar .right{display:flex;align-items:center;gap:10px;}
+  .seasonsel{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;font-family:inherit;font-size:13px;color:var(--ink);}
+  .addseason{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 11px;font-family:inherit;font-size:13px;color:var(--ink-soft);cursor:pointer;}
+  .ghost{background:none;border:none;color:var(--ink-soft);font-family:inherit;font-size:12px;cursor:pointer;text-decoration:underline;}
+  .tabs{display:flex;gap:4px;margin-top:14px;}
+  .tab{border:none;background:none;font-family:inherit;font-size:14px;color:var(--ink-soft);padding:10px 16px;cursor:pointer;border-bottom:2.5px solid transparent;font-weight:700;}
+  .tab.on{color:var(--honey-deep);border-bottom-color:var(--honey-deep);}
+
+  .gate{max-width:420px;margin:80px auto 0;text-align:center;}
+  .gate .eyebrow{font-size:11px;letter-spacing:.2em;color:var(--honey-deep);font-weight:700;text-transform:uppercase;}
+  .gate h2{font-family:'Gowun Batang',serif;font-size:24px;margin:12px 0 6px;}
+  .gate p{font-size:13.5px;color:var(--ink-soft);line-height:1.6;}
+  .gate-card{background:var(--paper-soft);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:24px 20px;margin-top:24px;text-align:left;}
+  .in-label{font-size:13px;font-weight:700;margin-bottom:7px;display:block;}
+  .in{width:100%;border:1px solid var(--line);background:#FFFDFA;border-radius:12px;padding:13px 15px;font-family:inherit;font-size:15px;color:var(--ink);outline:none;}
+  .in:focus{border-color:var(--honey);}
+  .btn{width:100%;margin-top:18px;border:none;border-radius:14px;cursor:pointer;background:linear-gradient(135deg,var(--honey),var(--honey-deep));color:#fff;font-family:'Gowun Batang',serif;font-weight:700;font-size:15px;padding:15px;box-shadow:0 10px 22px -12px rgba(200,133,42,.8);}
+  .msg{font-size:13px;color:var(--green);margin-top:12px;display:none;}
+  .msg.show{display:block;}
+
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  .scard{background:var(--paper-soft);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow);}
+  .scard .lab{font-size:12px;color:var(--ink-soft);margin-bottom:8px;}
+  .scard .num{font-family:'Gowun Batang',serif;font-size:30px;font-weight:700;line-height:1;}
+  .scard .num small{font-size:14px;color:var(--ink-soft);font-weight:400;margin-left:3px;}
+  .scard.gift .num{color:var(--honey-deep);}
+  @media(max-width:720px){.cards{grid-template-columns:repeat(2,1fr);}}
+
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+  .toolbar .filters{display:flex;gap:8px;align-items:center;}
+  .toolbar select,.toolbar input{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 11px;font-family:inherit;font-size:13px;color:var(--ink);}
+  .csvbtn{border:1px solid var(--honey);background:var(--honey-wash);color:var(--honey-deep);border-radius:10px;padding:9px 14px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;}
+
+  .tablewrap{overflow-x:auto;background:var(--paper-soft);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);}
+  table{border-collapse:collapse;width:100%;min-width:640px;}
+  th,td{padding:13px 10px;text-align:center;font-size:13.5px;border-bottom:1px solid var(--line);}
+  thead th{background:#FBF3E2;font-size:12.5px;color:var(--honey-deep);font-weight:700;}
+  th.fam,td.fam{text-align:left;padding-left:18px;min-width:130px;}
+  td.fam .who{font-weight:700;}
+  td.fam .em{font-size:11px;color:var(--ink-soft);}
+  tbody tr:hover{background:#FFFBF2;}
+  .cell{width:34px;height:34px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;}
+  .cell.done{background:linear-gradient(135deg,#F6D79B,#E7A23B);color:#5e3f12;cursor:pointer;box-shadow:0 4px 10px -5px rgba(200,133,42,.7);}
+  .cell.miss{background:#F4EFE4;color:#D8CBB2;}
+  .cnt{font-family:'Gowun Batang',serif;font-weight:700;font-size:16px;}
+  .badge{display:inline-block;font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;}
+  .badge.fin{background:var(--green-wash);color:var(--green);}
+  .badge.no{background:#F4EFE4;color:var(--ink-soft);}
+
+  .cfg{background:var(--honey-wash);border:1px solid #F2DFB6;border-radius:16px;padding:16px 18px;margin-bottom:24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .cfg .t{font-size:13px;font-weight:700;color:var(--honey-deep);}
+  .cfg .d{font-size:12px;color:var(--ink-soft);flex:1;min-width:200px;line-height:1.5;}
+  .cfg input{border:1px solid #EAD3A0;background:#fff;border-radius:10px;padding:9px 12px;font-family:inherit;font-size:13px;}
+  .cfg button{border:none;background:var(--honey-deep);color:#fff;border-radius:10px;padding:9px 16px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;}
+
+  /* ---------- 미션 편집기 ---------- */
+  .me-intro{font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:18px;background:var(--honey-wash);border-radius:14px;padding:14px 16px;}
+  .me-intro b{color:var(--honey-deep);}
+  .me-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+  @media(max-width:760px){.me-grid{grid-template-columns:1fr;}}
+  .medit{background:var(--paper-soft);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow);}
+  .medit .mehead{font-family:'Gowun Batang',serif;font-size:16px;color:var(--honey-deep);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .medit .mehead .nbox{width:26px;height:26px;border-radius:8px;background:var(--honey-wash);display:inline-flex;align-items:center;justify-content:center;font-size:13px;}
+  .medit label{font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin:11px 0 5px;}
+  .medit input,.medit textarea{width:100%;border:1px solid var(--line);background:#FFFDFA;border-radius:10px;padding:10px 12px;font-family:inherit;font-size:13.5px;color:var(--ink);outline:none;resize:vertical;}
+  .medit input:focus,.medit textarea:focus{border-color:var(--honey);}
+  .savebar{position:sticky;bottom:0;margin-top:20px;background:var(--paper);padding:14px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line);flex-wrap:wrap;}
+  .savebar .hint{font-size:12px;color:var(--ink-soft);}
+  .savebtn{border:none;border-radius:14px;background:linear-gradient(135deg,var(--honey),var(--honey-deep));color:#fff;font-family:'Gowun Batang',serif;font-weight:700;font-size:15px;padding:13px 28px;cursor:pointer;box-shadow:0 10px 22px -12px rgba(200,133,42,.8);}
+  .resetbtn{border:1px solid var(--line);background:#fff;color:var(--ink-soft);border-radius:12px;padding:11px 16px;font-family:inherit;font-size:13px;cursor:pointer;}
+
+  .overlay{position:fixed;inset:0;background:rgba(60,45,30,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:60;backdrop-filter:blur(2px);}
+  .overlay.show{display:flex;}
+  .modal{background:#fff;border-radius:20px;max-width:380px;width:100%;padding:22px;box-shadow:0 20px 50px -20px rgba(0,0,0,.4);}
+  .modal .mhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .modal .mhead .t{font-family:'Gowun Batang',serif;font-size:17px;}
+  .modal .mhead .x{background:none;border:none;font-size:20px;color:var(--ink-soft);cursor:pointer;}
+  .modal .mimg{width:100%;aspect-ratio:4/3;border-radius:12px;object-fit:cover;background:#F4EFE4;margin-bottom:14px;display:flex;align-items:center;justify-content:center;color:#C9B79B;font-size:13px;}
+  .modal .q{display:flex;gap:10px;font-size:14px;line-height:1.5;}
+  .modal .q + .q{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+  .modal .q .k{font-size:12px;color:var(--ink-soft);flex:none;min-width:54px;font-weight:700;}
+
+  #demoBanner{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:50;background:rgba(67,55,44,.92);color:#FBEFD6;font-size:11.5px;padding:9px 16px;border-radius:999px;box-shadow:0 8px 20px -8px rgba(0,0,0,.4);}
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<section id="adminAuth" class="screen">
+  <div class="gate">
+    <span class="eyebrow">관리자 전용</span><h2>관리자 로그인</h2>
+    <p>등록된 관리자 이메일로만 들어올 수 있어요.</p>
+    <div class="gate-card">
+      <label class="in-label" for="email">관리자 이메일</label>
+      <input class="in" id="email" type="email" placeholder="teacher@neungdong.es.kr">
+      <button class="btn" id="loginBtn">로그인</button>
+      <p class="msg" id="authMsg"></p>
+    </div>
+  </div>
+</section>
+
+<!-- 권한 없음 -->
+<section id="adminDenied" class="screen" hidden>
+  <div class="gate">
+    <span class="eyebrow">접근 불가</span><h2>권한이 없어요</h2>
+    <p>이 계정은 관리자로 등록되어 있지 않아요.</p>
+    <button class="ghost" id="denyBack" style="margin-top:18px;">다시 로그인</button>
+  </div>
+</section>
+
+<!-- 대시보드 -->
+<section id="adminDash" class="screen" hidden>
+  <div class="topbar">
+    <div class="wrap">
+      <div class="brand">
+        <div class="eyebrow">능동 디지털 인성교육 프로젝트</div>
+        <h1>관리자 <span>대시보드</span></h1>
+      </div>
+      <div class="right">
+        <select class="seasonsel" id="seasonSel"></select>
+        <button class="addseason" id="addSeason">+ 새 시즌</button>
+        <button class="ghost" id="signoutBtn">로그아웃</button>
+      </div>
+    </div>
+    <div class="wrap"><div class="tabs">
+      <button class="tab on" id="tabStatus">실천 현황</button>
+      <button class="tab" id="tabMissions">미션 편집</button>
+    </div></div>
+  </div>
+
+  <!-- ===== 현황 뷰 ===== -->
+  <div class="wrap" id="viewStatus">
+    <div class="cfg">
+      <span class="t">📅 시즌 시작일</span>
+      <span class="d">시작일을 정하면 가정 화면에서 "오늘 미션"이 자동으로 열리고, 지난 날은 잠겨요(월요일 시작 권장).</span>
+      <input type="date" id="startDate">
+      <button id="saveCfg">저장</button>
+    </div>
+    <div class="cards">
+      <div class="scard"><div class="lab">참여 가정</div><div class="num" id="cFam">0<small>가정</small></div></div>
+      <div class="scard gift"><div class="lab">완주 가정 (5일↑)</div><div class="num" id="cFin">0<small>가정</small></div></div>
+      <div class="scard"><div class="lab">완주율</div><div class="num" id="cRate">0<small>%</small></div></div>
+      <div class="scard"><div class="lab">평균 완료일</div><div class="num" id="cAvg">0<small>일</small></div></div>
+    </div>
+    <div class="toolbar">
+      <div class="filters">
+        <select id="gradeFilter"><option value="">전체 학년</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+        <input id="search" type="text" placeholder="가정 검색(반·번호)">
+      </div>
+      <button class="csvbtn" id="csvBtn">📄 보고서용 CSV 내보내기</button>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th class="fam">가정</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>주말</th><th>완료일</th><th>완주</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+  </div>
+
+  <!-- ===== 미션 편집 뷰 ===== -->
+  <div class="wrap" id="viewMissions" hidden>
+    <p class="me-intro">✏️ <b id="meSeason"></b> 미션을 자유롭게 바꿀 수 있어요. 저장하면 가정 화면에 바로 반영돼요. 시즌마다 다른 미션을 넣을 수 있어, <b>2학기·내년에도 시즌만 바꿔 그대로 재사용</b>할 수 있어요.</p>
+    <div class="me-grid" id="missionEditor"></div>
+    <div class="savebar">
+      <span class="hint">변경 후 꼭 저장을 눌러주세요.</span>
+      <div>
+        <button class="resetbtn" id="resetMissions">기본값으로 되돌리기</button>
+        <button class="savebtn" id="saveMissions">미션 저장</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 상세 모달 -->
+<div class="overlay" id="overlay"><div class="modal">
+  <div class="mhead"><span class="t" id="modalTitle"></span><button class="x" id="modalClose">✕</button></div>
+  <div class="mimg" id="modalImg">사진</div>
+  <div id="modalBody"></div>
+</div></div>
+
+<div id="demoBanner" hidden>🔧 데모 미리보기 — 샘플 데이터입니다. Firebase 키를 넣고 배포하면 실제 데이터가 표시돼요</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCHUXPjWyVdaPcKhgEk6PtstJJ4zI14h4A", authDomain: "class-relation2.firebaseapp.com", projectId: "class-relation2",
+  storageBucket: "class-relation2.firebasestorage.app", messagingSenderId: "90743477473", appId: "1:90743477473:web:b9ae303904acacade6d3a0", measurementId: "G-WQ1929803W"
+};
+const ADMIN_EMAILS = ["mysociety053@gmail.com"];
+let   SEASON = "2026-1";
+const NUM_DAYS = 6, COMPLETE_THRESHOLD = 5;
+const DAY_LABELS = ["월","화","수","목","금","주말"];
+const firebaseReady = !firebaseConfig.apiKey.includes("여기에");
+
+const DEFAULT_MISSIONS = [
+  {day:"월요일 · 첫째 날",tag:"🌱 자기인식",title:"우리 가족, 다짐의 시작",stop:"오늘 저녁, 온 가족이 폰을 내려놓고 둘러앉기",fill:"그동안 우리 폰 사용 습관과 함께 못한 저녁 시간을 솔직하게 돌아보고, 이번 한 주의 각오를 나눠요"},
+  {day:"화요일 · 둘째 날",tag:"🌱 신뢰·관계",title:"밥상 위 대화",stop:"저녁 한 끼, 온 가족 폰을 바구니에 모으기",fill:"오늘 있었던 일을 한 가지씩 돌아가며 이야기해요"},
+  {day:"수요일 · 셋째 날",tag:"🌱 자기조절",title:"잘 자, 화면아",stop:"잠들기 1시간 전, 온 가족 화면 끄기",fill:"그 시간에 책을 읽어주거나 도란도란 대화를 나눠요"},
+  {day:"목요일 · 넷째 날",tag:"🌱 공감·존중",title:"우리 가족 고운 말 약속판",stop:"단톡방·화면을 잠시 내려놓고 둘러앉기",fill:"고운 말 약속을 함께 정하고, 약속판으로 꾸며 잘 보이는 곳에 걸어요"},
+  {day:"금요일 · 다섯째 날",tag:"🌱 소통·협력",title:"보드게임 한 판!",stop:"각자 보던 화면을 끄고 거실에 모이기",fill:"온 가족이 보드게임 한 판! 함께 웃고 이야기하며 즐겨요"},
+  {day:"주말 · 한 주의 마무리",tag:"🌱 가족 시간·지속",title:"주말은 가족과 함께",stop:"주말에 시간을 정해 다 같이 폰 내려놓기",fill:"나들이·요리·놀이로 시간을 채우고, 앞으로도 이어갈 우리 가족 약속 하나를 함께 정해요"}
+];
+
+let rows=[], editMissions=structuredClone(DEFAULT_MISSIONS);
+
+const S={auth:document.getElementById('adminAuth'),deny:document.getElementById('adminDenied'),dash:document.getElementById('adminDash')};
+function show(n){for(const k in S)S[k].hidden=(k!==n);}
+
+/* 시즌 셀렉트 채우기 */
+const seasonOptions=["2026-1","2026-2","2027-1","2027-2"];
+function fillSeasons(){const sel=document.getElementById('seasonSel');sel.innerHTML='';
+  seasonOptions.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=labelSeason(s);if(s===SEASON)o.selected=true;sel.appendChild(o);});}
+function labelSeason(s){const [y,h]=s.split('-');return y+'년 '+h+'학기';}
+document.getElementById('addSeason').onclick=()=>{
+  const v=window.prompt('새 시즌 코드를 입력하세요 (예: 2028-1)');
+  if(v&&!seasonOptions.includes(v)){seasonOptions.push(v);fillSeasons();}
+};
+
+/* 탭 전환 */
+function setTab(t){
+  document.getElementById('tabStatus').classList.toggle('on',t==='status');
+  document.getElementById('tabMissions').classList.toggle('on',t==='missions');
+  document.getElementById('viewStatus').hidden=(t!=='status');
+  document.getElementById('viewMissions').hidden=(t!=='missions');
+}
+document.getElementById('tabStatus').onclick=()=>setTab('status');
+document.getElementById('tabMissions').onclick=()=>{renderEditor();setTab('missions');};
+
+/* ===== 미션 편집기 ===== */
+function renderEditor(){
+  document.getElementById('meSeason').textContent=labelSeason(SEASON);
+  const box=document.getElementById('missionEditor');box.innerHTML='';
+  editMissions.forEach((m,i)=>{
+    const c=document.createElement('div');c.className='medit';
+    c.innerHTML=
+      '<div class="mehead"><span class="nbox">'+(i+1)+'</span>'+DAY_LABELS[i]+' 미션</div>'+
+      '<label>요일·날 라벨</label><input data-i="'+i+'" data-f="day" value="">'+
+      '<label>인성 태그</label><input data-i="'+i+'" data-f="tag" value="">'+
+      '<label>제목</label><input data-i="'+i+'" data-f="title" value="">'+
+      '<label>멈춤</label><textarea data-i="'+i+'" data-f="stop" rows="2"></textarea>'+
+      '<label>채움</label><textarea data-i="'+i+'" data-f="fill" rows="3"></textarea>';
+    box.appendChild(c);
+    c.querySelector('[data-f="day"]').value=m.day;
+    c.querySelector('[data-f="tag"]').value=m.tag;
+    c.querySelector('[data-f="title"]').value=m.title;
+    c.querySelector('[data-f="stop"]').value=m.stop;
+    c.querySelector('[data-f="fill"]').value=m.fill;
+  });
+  box.querySelectorAll('input,textarea').forEach(el=>el.oninput=()=>{editMissions[+el.dataset.i][el.dataset.f]=el.value;});
+}
+document.getElementById('resetMissions').onclick=()=>{if(confirm('기본 미션으로 되돌릴까요? (저장 전까지는 반영되지 않아요)')){editMissions=structuredClone(DEFAULT_MISSIONS);renderEditor();}};
+
+/* ===== 현황 렌더 ===== */
+function completedCount(r){let c=0;for(let d=0;d<NUM_DAYS;d++)if(r.entries[d])c++;return c;}
+function render(){
+  const gf=document.getElementById('gradeFilter').value, sq=document.getElementById('search').value.trim();
+  const view=rows.filter(r=>(!gf||String(r.grade)===gf)&&(!sq||(r.classNo+'-'+r.studentNo).includes(sq)));
+  const fin=rows.filter(r=>completedCount(r)>=COMPLETE_THRESHOLD).length, tot=rows.length;
+  document.getElementById('cFam').innerHTML=tot+'<small>가정</small>';
+  document.getElementById('cFin').innerHTML=fin+'<small>가정</small>';
+  document.getElementById('cRate').innerHTML=(tot?Math.round(fin/tot*100):0)+'<small>%</small>';
+  document.getElementById('cAvg').innerHTML=(tot?(rows.reduce((s,r)=>s+completedCount(r),0)/tot):0).toFixed(1)+'<small>일</small>';
+  const tb=document.getElementById('tbody');tb.innerHTML='';
+  view.forEach(r=>{
+    const tr=document.createElement('tr');
+    let html='<td class="fam"><div class="who">'+r.grade+'-'+r.classNo+' '+r.studentNo+'번</div><div class="em">'+r.email+'</div></td>';
+    for(let d=0;d<NUM_DAYS;d++) html+= r.entries[d]
+      ? '<td><span class="cell done" data-uid="'+r.uid+'" data-day="'+d+'">✓</span></td>'
+      : '<td><span class="cell miss">·</span></td>';
+    const c=completedCount(r),done=c>=COMPLETE_THRESHOLD;
+    html+='<td><span class="cnt">'+c+'</span></td>';
+    html+='<td>'+(done?'<span class="badge fin">🎁 완주</span>':'<span class="badge no">미완주</span>')+'</td>';
+    tr.innerHTML=html;tb.appendChild(tr);
+  });
+  tb.querySelectorAll('.cell.done').forEach(el=>el.onclick=()=>openDetail(el.dataset.uid,+el.dataset.day));
+}
+function openDetail(uid,day){
+  const r=rows.find(x=>x.uid===uid);if(!r)return;const e=r.entries[day];if(!e)return;
+  document.getElementById('modalTitle').textContent=r.grade+'-'+r.classNo+' '+r.studentNo+'번 · '+DAY_LABELS[day];
+  const img=document.getElementById('modalImg');
+  if(e.photoURL){img.textContent='';img.style.backgroundImage='url('+e.photoURL+')';img.style.backgroundSize='cover';img.style.backgroundPosition='center';}
+  else{img.style.backgroundImage='';img.textContent='(사진)';}
+  let b='<div class="q"><span class="k">엄마·아빠</span><span>'+(e.parentLine||'-')+'</span></div>';
+  b+='<div class="q"><span class="k">우리 아이</span><span>'+(e.childLine||'-')+'</span></div>';
+  if(e.weeklyLine)b+='<div class="q"><span class="k">이번 주</span><span>'+e.weeklyLine+'</span></div>';
+  if(e.promiseLine)b+='<div class="q"><span class="k">우리 약속</span><span>'+e.promiseLine+'</span></div>';
+  document.getElementById('modalBody').innerHTML=b;
+  document.getElementById('overlay').classList.add('show');
+}
+document.getElementById('modalClose').onclick=()=>document.getElementById('overlay').classList.remove('show');
+document.getElementById('overlay').onclick=e=>{if(e.target.id==='overlay')document.getElementById('overlay').classList.remove('show');};
+document.getElementById('gradeFilter').onchange=render;
+document.getElementById('search').oninput=render;
+
+document.getElementById('csvBtn').onclick=()=>{
+  let csv='가정,이메일,'+DAY_LABELS.join(',')+',완료일수,완주여부\n';
+  rows.forEach(r=>{const cells=[];for(let d=0;d<NUM_DAYS;d++)cells.push(r.entries[d]?'O':'X');const c=completedCount(r);
+    csv+=[r.grade+'-'+r.classNo+' '+r.studentNo+'번',r.email,...cells,c,(c>=COMPLETE_THRESHOLD?'완주':'미완주')].join(',')+'\n';});
+  const blob=new Blob(["\uFEFF"+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='실천현황_'+SEASON+'.csv';a.click();
+};
+
+/* ===================== 데모 ===================== */
+function demoEntry(p,c,w,pr){return {photoURL:'',parentLine:p,childLine:c,weeklyLine:w||'',promiseLine:pr||''};}
+function runDemo(){
+  document.getElementById('demoBanner').hidden=false; fillSeasons();
+  const mk=(uid,g,cl,no,em,dd)=>{const entries={};dd.forEach(d=>{entries[d]=d===5
+    ?demoEntry('주말 내내 함께라 좋았어요','보드게임 또 하고 싶어요','한 주가 금방 갔어요','저녁엔 폰 멀리두기')
+    :demoEntry('오랜만에 길게 대화했어요','아빠랑 얘기 많이 했어요');});
+    return {uid,grade:g,classNo:cl,studentNo:no,email:em,entries};};
+  rows=[mk('u1',3,2,15,'parent_a@email.com',[0,1,2,3,4,5]),mk('u2',3,2,7,'parent_b@email.com',[0,1,3,4]),
+        mk('u3',4,1,3,'parent_c@email.com',[0,1,2,3,4]),mk('u4',1,3,22,'parent_d@email.com',[0,2,4,5]),
+        mk('u5',5,2,9,'parent_e@email.com',[0,1,2,3,4,5]),mk('u6',6,1,11,'parent_f@email.com',[0,1])];
+  show('auth');
+  document.getElementById('loginBtn').onclick=()=>{render();show('dash');};
+  document.getElementById('signoutBtn').onclick=()=>show('auth');
+  document.getElementById('denyBack').onclick=()=>show('auth');
+  document.getElementById('saveCfg').onclick=()=>alert('(데모) 시작일이 저장되면 가정 화면의 "오늘 미션"이 이 날짜를 기준으로 열려요.');
+  document.getElementById('saveMissions').onclick=()=>alert('(데모) 저장하면 '+labelSeason(SEASON)+' 미션이 가정 화면에 즉시 반영돼요.');
+  document.getElementById('seasonSel').onchange=e=>{SEASON=e.target.value;editMissions=structuredClone(DEFAULT_MISSIONS);render();renderEditor();};
+}
+
+/* ===================== 실제 모드 ===================== */
+async function runFirebase(){
+  const [{initializeApp},
+         {getAuth,sendSignInLinkToEmail,isSignInWithEmailLink,signInWithEmailLink,onAuthStateChanged,signOut},
+         {getFirestore,collection,getDocs,query,where,doc,setDoc,getDoc}]=await Promise.all([
+    import("https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js"),
+    import("https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js"),
+    import("https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js")]);
+  const app=initializeApp(firebaseConfig);const auth=getAuth(app),db=getFirestore(app);
+  const acs={url:window.location.href,handleCodeInApp:true};
+  fillSeasons();
+
+  document.getElementById('loginBtn').onclick=async()=>{
+    const email=document.getElementById('email').value.trim();const m=document.getElementById('authMsg');
+    if(!email){m.textContent='이메일을 입력해주세요.';m.classList.add('show');return;}
+    try{await sendSignInLinkToEmail(auth,email,acs);window.localStorage.setItem('adminEmail',email);
+        m.textContent='확인 메일을 보냈어요. 메일의 링크를 눌러 로그인해주세요.';m.classList.add('show');}
+    catch(e){m.textContent='전송 실패: '+e.message;m.classList.add('show');}
+  };
+  if(isSignInWithEmailLink(auth,window.location.href)){
+    let email=window.localStorage.getItem('adminEmail')||window.prompt('이메일을 다시 입력해주세요');
+    try{await signInWithEmailLink(auth,email,window.location.href);window.localStorage.removeItem('adminEmail');}catch(e){}
+  }
+  onAuthStateChanged(auth,async(user)=>{
+    if(!user){show('auth');return;}
+    if(!ADMIN_EMAILS.includes(user.email)){show('deny');return;}
+    await loadAll();show('dash');
+  });
+  document.getElementById('signoutBtn').onclick=()=>signOut(auth);
+  document.getElementById('denyBack').onclick=()=>signOut(auth);
+  document.getElementById('seasonSel').onchange=async e=>{SEASON=e.target.value;await loadAll();};
+  document.getElementById('saveCfg').onclick=async()=>{
+    const d=document.getElementById('startDate').value;if(!d)return;
+    await setDoc(doc(db,'config',SEASON),{startDate:d},{merge:true});alert('시작일을 저장했어요.');
+  };
+  document.getElementById('saveMissions').onclick=async()=>{
+    await setDoc(doc(db,'config',SEASON),{missions:editMissions},{merge:true});
+    alert(labelSeason(SEASON)+' 미션을 저장했어요. 가정 화면에 바로 반영돼요.');
+  };
+
+  async function loadAll(){
+    // 미션
+    let cfg=null;try{const c=await getDoc(doc(db,'config',SEASON));if(c.exists())cfg=c.data();}catch(e){}
+    editMissions = (cfg&&cfg.missions&&cfg.missions.length===NUM_DAYS) ? structuredClone(cfg.missions) : structuredClone(DEFAULT_MISSIONS);
+    if(cfg&&cfg.startDate)document.getElementById('startDate').value=cfg.startDate; else document.getElementById('startDate').value='';
+    renderEditor();
+    // 명부 + 기록
+    const map={};
+    const famSnap=await getDocs(collection(db,'families'));
+    famSnap.forEach(d=>{const f=d.data();map[d.id]={uid:d.id,grade:f.grade,classNo:f.classNo,studentNo:f.studentNo,email:f.email,entries:{}};});
+    const enSnap=await getDocs(query(collection(db,'entries'),where('season','==',SEASON)));
+    enSnap.forEach(d=>{const e=d.data();if(!map[e.uid])map[e.uid]={uid:e.uid,grade:e.grade,classNo:e.classNo,studentNo:e.studentNo,email:e.email,entries:{}};
+      map[e.uid].entries[e.day]={photoURL:e.photoURL,parentLine:e.parentLine,childLine:e.childLine,weeklyLine:e.weeklyLine,promiseLine:e.promiseLine};});
+    rows=Object.values(map);render();
+  }
+}
+
+if(firebaseReady){runFirebase().catch(err=>{console.error(err);runDemo();});}
+else{runDemo();}
+</script>
+</body>
+</html>

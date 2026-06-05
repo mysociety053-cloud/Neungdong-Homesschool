@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// 능동 디지털 인성교육 프로젝트 — Cloud Storage 보안 규칙
+// 사진은 얼굴이 없는 활동 사진이지만, 그래도 외부 노출을 막기 위해 잠급니다.
+// ⚠️ 아래 ADMIN 이메일을 실제 관리자 이메일로 바꿔주세요.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email in [
+        'mysociety053@gmail.com'
+      ];
+    }
+
+    // entries/{uid}/...  : 본인만 업로드, 본인·관리자만 읽기
+    match /entries/{uid}/{fileName} {
+      allow read:  if isAdmin() || (isSignedIn() && request.auth.uid == uid);
+      allow write: if isSignedIn()
+                   && request.auth.uid == uid
+                   && request.resource.size < 8 * 1024 * 1024          // 8MB 이하
+                   && request.resource.contentType.matches('image/.*'); // 이미지만
+    }
+  }
+}
