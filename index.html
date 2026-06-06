@@ -690,11 +690,12 @@ async function runFirebase(){
     // 사이트 공통 설정(학교 이름·기본 회차) 읽기
     let site=null;
     try{ const s=await getDoc(doc(db,'config','site')); if(s.exists()) site=s.data(); }catch(e){}
-    // 회차 결정: URL ?s= 우선 → 관리자가 지정한 기본 회차 → 기본값
-    if(/^\d{4}-\d+$/.test(urlRound)) SEASON=urlRound;
-    else if(site && site.currentRound) SEASON=site.currentRound;
     // 학교 이름을 푸터에 반영 — 미등록 시 기본값 유지
     if(site && site.schoolName) document.getElementById('footSchool').textContent=site.schoolName;
+    // 회차 결정: URL ?s= 우선 → 관리자가 지정한 기본 회차. 둘 다 없으면 안전하게 '준비 중' 안내
+    if(/^\d{4}-\d+$/.test(urlRound)) SEASON=urlRound;
+    else if(site && site.currentRound) SEASON=site.currentRound;
+    else { showNotice({state:'notready'}); return; }
 
     // 해당 회차의 미션·시작일·종료여부 불러오기
     let startDate=null, closed=false;
