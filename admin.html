@@ -124,8 +124,8 @@
     <div class="gate-card">
       <label class="in-label" for="email">관리자 이메일</label>
       <input class="in" id="email" type="email" autocomplete="username" placeholder="teacher@neungdong.es.kr">
-      <label class="in-label" for="pw" style="margin-top:14px;">비밀번호 (숫자 4자리)</label>
-      <input class="in" id="pw" type="password" inputmode="numeric" autocomplete="current-password" maxlength="4" placeholder="••••">
+      <label class="in-label" for="pw" style="margin-top:14px;">비밀번호 (8자 이상)</label>
+      <input class="in" id="pw" type="password" autocomplete="current-password" minlength="8" maxlength="64" placeholder="••••••••">
       <button class="btn" id="loginBtn">로그인</button>
       <p class="msg" id="authMsg"></p>
       <button class="ghost" id="forgotBtn" type="button" style="margin-top:12px;">비밀번호를 잊으셨나요?</button>
@@ -178,6 +178,7 @@
       <button id="copyLink">링크 복사</button>
       <button id="setCurrent">기본 회차로</button>
       <button id="toggleClosed">회차 종료</button>
+      <button id="deleteSeason" class="delbtn" style="padding:9px 14px;font-size:13px;">회차 삭제</button>
     </div>
     <div class="cfg">
       <span class="t">📅 회차 시작일</span>
@@ -419,8 +420,6 @@ async function runFirebase(){
     import("https://www.gstatic.com/firebasejs/11.0.0/firebase-functions.js")]);
   const app=initializeApp(firebaseConfig);const auth=getAuth(app),db=getFirestore(app);
   const functions=getFunctions(app,'asia-northeast3');
-  // 4자리 PIN을 Firebase 최소 길이(6자)에 맞추는 고정 접미사 — index.html·functions/index.js의 PIN_PAD와 반드시 동일
-  const PIN_PAD='ndg!';
   fillSeasons();
 
   // 가정 삭제: 기록·사진·로그인 계정까지 모두 영구 삭제 (Cloud Function이 Admin 권한으로 처리)
@@ -464,6 +463,20 @@ async function runFirebase(){
     alert(next?'회차를 종료했어요.':'회차를 다시 열었어요.');
     await loadAll();
   };
+  // 회차 삭제: 해당 회차의 기록·사진·설정을 영구 삭제 (Cloud Function이 관리자 권한으로 처리)
+  document.getElementById('deleteSeason').onclick=async()=>{
+    const target=SEASON;
+    if(seasonList.length<=1){alert('마지막 남은 회차는 삭제할 수 없어요.\n새 회차를 먼저 등록한 뒤 삭제해주세요.');return;}
+    if(!confirm('‘'+labelSeason(target)+'’를 삭제할까요?\n\n이 회차의 모든 기록·사진·설정(미션·시작일 등)이 영구 삭제되며 되돌릴 수 없어요.\n(가정의 로그인 계정과 다른 회차 기록은 그대로 유지돼요)'))return;
+    if(!confirm('정말 삭제할까요? 이 작업은 되돌릴 수 없어요.\n\n삭제 대상: '+labelSeason(target)))return;
+    const btn=document.getElementById('deleteSeason'); btn.disabled=true; const old=btn.textContent; btn.textContent='삭제 중…';
+    try{
+      const r=await httpsCallable(functions,'deleteSeason')({season:target});
+      await loadSeasons(); await loadAll();
+      alert('‘'+labelSeason(target)+'’를 삭제했어요. (기록 '+((r&&r.data&&r.data.deleted)||0)+'건 삭제)');
+    }catch(e){ alert('삭제에 실패했어요: '+(e.message||e)); }
+    btn.disabled=false; btn.textContent=old;
+  };
 
   // 등록된 회차 목록 로드 (config 컬렉션에서 '학년도-회차' 형식 문서만)
   async function loadSeasons(){
@@ -477,13 +490,12 @@ async function runFirebase(){
 
   const m=document.getElementById('authMsg');
   function amsg(t,err){m.textContent=t;m.classList.toggle('err',!!err);m.classList.add('show');}
-  // 로그인: 이메일 + 4자리 PIN (처음이면 자동 가입, 이후 로그인). 관리자 외 이메일은 가입돼도 접근 거부됨.
+  // 로그인: 이메일 + 비밀번호(8자 이상) (처음이면 자동 가입, 이후 로그인). 관리자 외 이메일은 가입돼도 접근 거부됨.
   document.getElementById('loginBtn').onclick=async()=>{
     const email=document.getElementById('email').value.trim();
-    const pin=document.getElementById('pw').value.trim();
+    const pw=document.getElementById('pw').value;
     if(!email){amsg('이메일을 입력해주세요.',true);return;}
-    if(!/^\d{4}$/.test(pin)){amsg('비밀번호는 숫자 4자리로 입력해주세요.',true);return;}
-    const pw=pin+PIN_PAD;
+    if(pw.length<8){amsg('비밀번호는 8자 이상으로 입력해주세요.',true);return;}
     const btn=document.getElementById('loginBtn'); btn.disabled=true; amsg('확인 중이에요…',false);
     try{
       try{ await createUserWithEmailAndPassword(auth,email,pw); }
@@ -495,13 +507,13 @@ async function runFirebase(){
       btn.disabled=false;
     }
   };
-  // 비밀번호 찾기: 새 4자리 PIN을 메일로 발송 (가정과 동일한 resetPin 함수 재사용)
+  // 비밀번호 찾기: 새 비밀번호를 메일로 발송 (resetPin 함수 재사용 — 관리자는 긴 비밀번호로 발급됨)
   document.getElementById('forgotBtn').onclick=async()=>{
     const email=document.getElementById('email').value.trim();
     if(!email){amsg('먼저 이메일을 입력해주세요.',true);return;}
     const btn=document.getElementById('forgotBtn'); btn.disabled=true;
     amsg('새 비밀번호를 메일로 보내는 중이에요…',false);
-    try{ await httpsCallable(functions,'resetPin')({email}); amsg('입력하신 이메일로 새 비밀번호 4자리를 보냈어요. 메일함(스팸함 포함)을 확인해주세요.',false); }
+    try{ await httpsCallable(functions,'resetPin')({email}); amsg('입력하신 이메일로 새 비밀번호를 보냈어요. 메일함(스팸함 포함)을 확인해주세요.',false); }
     catch(e){ amsg('메일 전송에 실패했어요. 잠시 후 다시 시도해주세요.',true); }
     btn.disabled=false;
   };

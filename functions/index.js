@@ -1,10 +1,10 @@
 /* ===================================================================
    능동 디지털 인성교육 — 비밀번호(PIN) 재설정 Cloud Function
    ------------------------------------------------------------------
-   학부모가 4자리 비밀번호를 잊었을 때:
-     1) 새 4자리 PIN을 무작위로 생성
-     2) Firebase Auth 비밀번호를 새 PIN으로 변경 (관리자도 평문은 모름)
-     3) 해당 이메일로 새 PIN을 발송
+   비밀번호를 잊었을 때:
+     1) 새 비밀번호를 무작위로 생성 (가정=4자리 PIN, 관리자=영문/숫자 10자리)
+     2) Firebase Auth 비밀번호를 새 값으로 변경 (관리자도 평문은 모름)
+     3) 해당 이메일로 새 비밀번호를 발송
    ⚠️ 이메일 존재 여부를 노출하지 않으려 가입 여부와 무관하게 동일하게 응답합니다.
 =================================================================== */
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
@@ -40,9 +40,20 @@ exports.resetPin = onCall(
       return {ok: true};
     }
 
-    // 새 4자리 PIN 생성 (1000~9999)
-    const pin = String(Math.floor(1000 + Math.random() * 9000));
-    await admin.auth().updateUser(user.uid, {password: pin + PIN_PAD});
+    // 관리자: 영문/숫자 10자리 비밀번호, 가정: 기존 4자리 PIN
+    const isAdmin = ADMIN_EMAILS.includes(email);
+    let newPassword;
+    if (isAdmin) {
+      // 헷갈리기 쉬운 문자(0/O, 1/l/I) 제외한 10자리 영문+숫자
+      const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      newPassword = Array.from({length: 10}, () =>
+        chars[Math.floor(Math.random() * chars.length)]).join('');
+      await admin.auth().updateUser(user.uid, {password: newPassword});
+    } else {
+      const pin = String(Math.floor(1000 + Math.random() * 9000));
+      newPassword = pin;
+      await admin.auth().updateUser(user.uid, {password: pin + PIN_PAD});
+    }
 
     // 메일 발송
     const transporter = nodemailer.createTransport({
@@ -52,9 +63,12 @@ exports.resetPin = onCall(
     await transporter.sendMail({
       from: `능동 인성교육 <${GMAIL_USER.value()}>`,
       to: email,
-      subject: '[능동 인성교육] 새 비밀번호(PIN) 안내',
-      text:
-        `요청하신 새 비밀번호(PIN)는 ${pin} 입니다.\n\n` +
+      subject: '[능동 인성교육] 새 비밀번호 안내',
+      text: isAdmin ?
+        `요청하신 새 관리자 비밀번호는 ${newPassword} 입니다.\n\n` +
+        `앱에서 이메일과 이 비밀번호로 로그인해주세요.\n` +
+        `본인이 요청하지 않았다면 이 메일은 무시하셔도 됩니다.` :
+        `요청하신 새 비밀번호(PIN)는 ${newPassword} 입니다.\n\n` +
         `앱에서 이메일과 이 숫자 4자리로 로그인해주세요.\n` +
         `본인이 요청하지 않았다면 이 메일은 무시하셔도 됩니다.`,
     });
@@ -98,5 +112,65 @@ exports.deleteFamily = onCall(
     try { await admin.auth().deleteUser(uid); } catch (e) {}
 
     return {ok: true};
+  }
+);
+
+/* ===================================================================
+   회차(시즌) 완전 삭제 — 관리자만 호출 가능
+   해당 회차의 기록(entries) + 사진(Storage) + 회차 설정(config/{회차})을 모두 삭제
+   ⚠️ 가정의 로그인 계정과 다른 회차의 기록은 건드리지 않습니다.
+=================================================================== */
+exports.deleteSeason = onCall(
+  {region: 'asia-northeast3'},
+  async (req) => {
+    // 관리자 인증 확인
+    const callerEmail = req.auth && req.auth.token && req.auth.token.email;
+    if (!callerEmail || !ADMIN_EMAILS.includes(callerEmail)) {
+      throw new HttpsError('permission-denied', '관리자만 삭제할 수 있습니다.');
+    }
+    const season = String((req.data && req.data.season) || '').trim();
+    if (!/^\d{4}-\d+$/.test(season)) {
+      throw new HttpsError('invalid-argument', '회차 형식이 올바르지 않습니다.');
+    }
+
+    const db = admin.firestore();
+    const bucket = admin.storage().bucket(STORAGE_BUCKET);
+
+    // 1) 이 회차의 기록(entries) 조회 — 사진 경로를 모은 뒤 문서 삭제
+    const snap = await db.collection('entries').where('season', '==', season).get();
+    const docs = snap.docs;
+
+    // 사진(Storage) 삭제 — 경로: entries/{uid}/{회차}_day{N}.jpg
+    const photoDeletes = [];
+    docs.forEach((d) => {
+      const e = d.data();
+      if (e.uid && (e.day !== undefined && e.day !== null)) {
+        photoDeletes.push(
+          bucket.file(`entries/${e.uid}/${season}_day${e.day}.jpg`).delete().catch(() => {})
+        );
+      }
+    });
+    await Promise.all(photoDeletes);
+
+    // 기록 문서 삭제 — 배치 한도(500)를 고려해 450개씩 나눠 커밋
+    for (let i = 0; i < docs.length; i += 450) {
+      const batch = db.batch();
+      docs.slice(i, i + 450).forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+
+    // 2) 회차 설정 문서 삭제
+    try { await db.collection('config').doc(season).delete(); } catch (e) {}
+
+    // 3) 이 회차가 '기본 회차'였다면 해제
+    try {
+      const siteRef = db.collection('config').doc('site');
+      const site = await siteRef.get();
+      if (site.exists && site.data().currentRound === season) {
+        await siteRef.update({currentRound: admin.firestore.FieldValue.delete()});
+      }
+    } catch (e) {}
+
+    return {ok: true, deleted: docs.length};
   }
 );
