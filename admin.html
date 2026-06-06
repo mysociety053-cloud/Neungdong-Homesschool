@@ -554,10 +554,9 @@ async function runFirebase(){
     sc.textContent=isCurrent?'기본 회차 ✓':'기본 회차로'; sc.disabled=isCurrent;
     document.getElementById('toggleClosed').textContent=(cfg&&cfg.closed)?'회차 재개':'회차 종료';
     renderEditor();
-    // 명부 + 기록
+    // 이 회차에 기록(entries)이 있는 가정만 집계 → 회차별로 독립(이전 회차 가정이 섞이지 않음)
+    // 가정 식별 정보(학년·반·번호)는 그 회차 기록에 담긴 값을 사용
     const map={};
-    const famSnap=await getDocs(collection(db,'families'));
-    famSnap.forEach(d=>{const f=d.data();map[d.id]={uid:d.id,grade:f.grade,classNo:f.classNo,studentNo:f.studentNo,email:f.email,entries:{}};});
     const enSnap=await getDocs(query(collection(db,'entries'),where('season','==',SEASON)));
     enSnap.forEach(d=>{const e=d.data();if(!map[e.uid])map[e.uid]={uid:e.uid,grade:e.grade,classNo:e.classNo,studentNo:e.studentNo,email:e.email,entries:{}};
       map[e.uid].entries[e.day]={photoURL:e.photoURL,parentLine:e.parentLine,childLine:e.childLine,weeklyLine:e.weeklyLine,promiseLine:e.promiseLine};});
