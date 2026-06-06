@@ -195,7 +195,7 @@
       <div class="gate-card">
         <h2>이메일로 시작하기</h2>
         <p class="desc">처음이면 자동 가입, 다음부터는 같은 비밀번호로 로그인돼요</p>
-        <label class="consent">
+        <label class="consent" id="consentBox">
           <input type="checkbox" id="consent">
           <span><b>[필수] 개인정보 수집·이용 동의</b><br>
           로그인에 사용하는 <b>이메일·비밀번호</b>와 미션 기록을 수집·이용하는 데 동의합니다.
@@ -416,7 +416,7 @@ const weeklyLine=document.getElementById('weeklyLine');
 const promiseLine=document.getElementById('promiseLine');
 const submitBtn=document.getElementById('submitBtn');
 const gateHint=document.getElementById('gateHint');
-let photoData=null, photoFile=null;
+let photoData=null, photoFile=null, existingPhotoURL=null;
 let isWeekend = (todayIdx === NUM_DAYS-1);
 /* 시작일 기준으로 오늘이 며칠째 미션인지 계산 (월요일 시작 가정) */
 function computeToday(startStr){
@@ -544,20 +544,57 @@ document.getElementById('againBtn').addEventListener('click',()=>{
   document.getElementById('logBlock').style.display='block';
 });
 
+/* 폼을 빈 상태로 초기화 (다른 날/다른 계정 진입 시 이전 입력 잔여 방지) */
+function resetForm(){
+  parentLine.value=''; childLine.value=''; weeklyLine.value=''; promiseLine.value='';
+  photoData=null; photoFile=null; existingPhotoURL=null;
+  preview.removeAttribute('src'); photoBox.classList.remove('has');
+  document.getElementById('doneView').classList.remove('show');
+  document.getElementById('missionBlock').style.display='block';
+  document.getElementById('logBlock').style.display='block';
+  checkReady();
+}
+/* 저장된 기록을 폼에 채움 (이미 완료한 날 다시 보기·수정용). 사진은 URL만 있고 파일은 없음 */
+function loadEntry(e){
+  parentLine.value=e.parentLine||''; childLine.value=e.childLine||'';
+  weeklyLine.value=e.weeklyLine||''; promiseLine.value=e.promiseLine||'';
+  if(e.photoURL){
+    existingPhotoURL=e.photoURL; photoData=e.photoURL; photoFile=null;
+    preview.src=e.photoURL; photoBox.classList.add('has');
+  }
+  checkReady();
+}
+
 /* 설정 화면 입력 검증 */
 const gradeEl=document.getElementById('grade'),classEl=document.getElementById('classNo'),numEl=document.getElementById('studentNo');
 function checkSetup(){document.getElementById('setupBtn').disabled=!(gradeEl.value&&classEl.value&&numEl.value);}
 [gradeEl,classEl,numEl].forEach(el=>el.addEventListener('input',checkSetup));
 
-/* 개인정보 수집·이용 동의 — 동의해야 이메일·비밀번호 입력 및 로그인 가능 */
+/* 개인정보 수집·이용 동의 — 최초 1회만. 동의 기록은 기기(localStorage)에 저장하고 이후 숨김 */
 const consentEl=document.getElementById('consent');
+const consentBox=document.getElementById('consentBox');
+const CONSENT_KEY='ndgPrivacyConsent';
+// 사생활보호 모드 등에서 localStorage가 막혀도 깨지지 않도록 안전 래퍼
+function lsGet(k){ try{return localStorage.getItem(k);}catch(e){return null;} }
+function lsSet(k,v){ try{localStorage.setItem(k,v);}catch(e){} }
+let consentAt=0; // 동의 시각(프로필에 함께 기록)
 function syncConsent(){
   const ok=consentEl.checked;
+  if(ok && !lsGet(CONSENT_KEY)){
+    consentAt=Date.now();
+    lsSet(CONSENT_KEY,String(consentAt));
+  }
   document.getElementById('email').disabled=!ok;
   document.getElementById('pin').disabled=!ok;
   document.getElementById('loginBtn').disabled=!ok;
 }
 consentEl.addEventListener('change',syncConsent);
+// 이 기기에서 이미 동의했으면: 동의 박스를 숨기고 바로 입력 가능
+if(lsGet(CONSENT_KEY)){
+  consentAt=Number(lsGet(CONSENT_KEY))||Date.now();
+  consentEl.checked=true;
+  if(consentBox) consentBox.style.display='none';
+}
 syncConsent();
 
 /* ===================================================================
@@ -666,9 +703,8 @@ async function runFirebase(){
   // 3) 로그인 상태 감지 → 설정 여부에 따라 화면 분기
   onAuthStateChanged(auth,async(user)=>{
     if(!user){
-      consentEl.checked=false;          // 로그아웃 시 개인정보 동의 다시 받기
       document.getElementById('pin').value='';
-      syncConsent();                    // 동의 전까지 로그인 버튼 비활성화
+      syncConsent();                    // 동의 상태 유지(기기에 기억됨) — 입력 가능 상태 재적용
       authMsg.classList.remove('show','err');
       show('auth');return;
     }
@@ -680,7 +716,7 @@ async function runFirebase(){
 
   // 4) 최초 설정 저장 (학년·반·번호, 실명 없음)
   document.getElementById('setupBtn').onclick=async()=>{
-    profile={email:auth.currentUser.email,grade:gradeEl.value,classNo:classEl.value,studentNo:numEl.value,createdAt:Date.now()};
+    profile={email:auth.currentUser.email,grade:gradeEl.value,classNo:classEl.value,studentNo:numEl.value,createdAt:Date.now(),consentedAt:consentAt||Date.now()};
     await setDoc(doc(db,'families',uid),profile);
     await enterApp();
   };
@@ -717,18 +753,25 @@ async function runFirebase(){
     const q=query(collection(db,'entries'),where('uid','==',uid),where('season','==',SEASON));
     const res=await getDocs(q);
     renderProgress(res.size);
+    resetForm();
     show('app');
+    // 오늘 미션을 이미 완료했으면 그날 입력 내용을 채워 완료 화면으로 보여줌(수정 가능)
+    const todayDoc=res.docs.find(d=>d.id===(uid+'_'+SEASON+'_day'+todayIdx));
+    if(todayDoc){ loadEntry(todayDoc.data()); showDone(); }
   }
 
   // 6) 미션 완료 저장 (사진 → Storage, 소감 → Firestore)
   submitBtn.onclick=async()=>{
     submitBtn.disabled=true;
     try{
-      const path='entries/'+uid+'/'+SEASON+'_day'+todayIdx+'.jpg';
-      const sref=ref(storage,path);
-      await uploadBytes(sref,photoFile);
-      const photoURL=await getDownloadURL(sref);
-      const id=uid+'_'+SEASON+'_day'+todayIdx; // 같은 날 중복 저장 방지
+      let photoURL=existingPhotoURL;
+      if(photoFile){ // 사진을 새로 골랐을 때만 업로드(수정 시 그대로 두면 기존 사진 유지)
+        const path='entries/'+uid+'/'+SEASON+'_day'+todayIdx+'.jpg';
+        const sref=ref(storage,path);
+        await uploadBytes(sref,photoFile);
+        photoURL=await getDownloadURL(sref);
+      }
+      const id=uid+'_'+SEASON+'_day'+todayIdx; // 같은 날 중복 저장 방지(수정 시 덮어씀)
       await setDoc(doc(db,'entries',id),{
         uid, email:profile.email, grade:profile.grade, classNo:profile.classNo, studentNo:profile.studentNo,
         season:SEASON, day:todayIdx,
@@ -736,6 +779,7 @@ async function runFirebase(){
         weeklyLine:isWeekend?weeklyLine.value.trim():'', promiseLine:isWeekend?promiseLine.value.trim():'',
         photoURL, completed:true, createdAt:Date.now()
       });
+      existingPhotoURL=photoURL; // 수정 후에도 사진 유지
       showDone();
     }catch(e){ alert('저장에 실패했어요: '+e.message); submitBtn.disabled=false; }
   };

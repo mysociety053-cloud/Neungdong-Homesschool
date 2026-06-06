@@ -99,7 +99,7 @@ firebase deploy --only firestore:rules,storage
 ---
 
 ## 데이터 구조 (Firestore)
-- `families/{uid}` — `{ email, grade, classNo, studentNo, createdAt }`
+- `families/{uid}` — `{ email, grade, classNo, studentNo, createdAt, consentedAt }` (consentedAt = 개인정보 수집·이용 동의 시각)
 - `entries/{uid}_{season}_day{n}` — `{ uid, email, grade, classNo, studentNo, season, day, parentLine, childLine, weeklyLine, promiseLine, photoURL, completed, createdAt }`
 - `config/{학년도-회차}` — `{ year, round, startDate, threshold, missions: [ {day, tag, title, stop, fill} × 6 ], closed }` (회차별 설정. 예: `config/2026-1`. `threshold`=완주 기준일(기본 5), `closed:true`면 가정 화면이 종료 안내로 전환)
 - `config/site` — `{ schoolName, currentRound }` (사이트 공통: 학교 이름 + `?s=` 없는 기본 주소로 열릴 기본 회차)
@@ -117,8 +117,9 @@ firebase deploy --only firestore:rules,storage
 ## 주의
 - 자녀 사진·이메일은 개인정보입니다. 학부모 동의(수집 항목·목적·보관 기간·공개 범위)를 반드시 받고,
   외부 공개 없이 학급·검증 용도로만 사용하세요.
-- 가정 로그인 화면에 **[필수] 개인정보 수집·이용 동의** 체크박스가 있어, 동의해야 로그인 버튼이 활성화됩니다.
+- 가정 로그인 화면에 **[필수] 개인정보 수집·이용 동의** 체크박스가 있어, 동의해야 이메일·비밀번호 입력 및 로그인이 됩니다.
   안내 문구에 "개인정보는 미션 기간 종료 후에 자동으로 폐기됩니다"가 표시됩니다.
+  - **최초 1회만** 표시됩니다(기기에 동의 기록 저장 → 이후 숨김). 동의 시각은 `families/{uid}.consentedAt`에 서버 기록으로 남습니다.
 - ⚠️ **"자동 폐기"는 현재 코드로 자동 실행되지 않습니다.** 회차 종료 후 관리자가 현황 표의 **🗑 삭제**로 각 가정을
   정리하거나, 약속한 "자동 폐기"를 실제로 지키려면 **예약 함수(Cloud Scheduler + Functions)로 일괄 삭제**를 추가해야 합니다.
   (원하면 회차 종료 N일 후 해당 회차 데이터를 자동 삭제하는 함수로 구현 가능)
