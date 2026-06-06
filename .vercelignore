@@ -1,0 +1,12 @@
+# Vercel에는 가정(index.html)·관리자(admin.html) 웹 화면만 배포합니다.
+# 아래 항목은 저장소(GitHub)에는 그대로 두되, 공개 사이트에는 배포하지 않습니다.
+
+docs/
+functions/
+firebase.json
+firestore.rules
+storage.rules
+README.md
+.gitignore
+.firebaserc
+.claude/
