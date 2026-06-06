@@ -43,6 +43,8 @@
   .btn{width:100%;margin-top:18px;border:none;border-radius:14px;cursor:pointer;background:linear-gradient(135deg,var(--honey),var(--honey-deep));color:#fff;font-family:'Gowun Batang',serif;font-weight:700;font-size:15px;padding:15px;box-shadow:0 10px 22px -12px rgba(200,133,42,.8);}
   .msg{font-size:13px;color:var(--green);margin-top:12px;display:none;}
   .msg.show{display:block;}
+  .msg.err{color:#C5503B;}
+  .note2{font-size:11.5px;color:var(--ink-soft);line-height:1.55;margin-top:12px;background:var(--honey-wash);border-radius:11px;padding:9px 12px;}
 
   .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
   .scard{background:var(--paper-soft);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow);}
@@ -72,6 +74,9 @@
   .badge{display:inline-block;font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;}
   .badge.fin{background:var(--green-wash);color:var(--green);}
   .badge.no{background:#F4EFE4;color:var(--ink-soft);}
+  .delbtn{border:1px solid #E7C4BC;background:#fff;color:#C5503B;border-radius:9px;padding:6px 10px;
+    font-family:inherit;font-size:12px;cursor:pointer;white-space:nowrap;}
+  .delbtn:hover{background:#FBEFEC;}
 
   .cfg{background:var(--honey-wash);border:1px solid #F2DFB6;border-radius:16px;padding:16px 18px;margin-bottom:24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
   .cfg .t{font-size:13px;font-weight:700;color:var(--honey-deep);}
@@ -118,9 +123,13 @@
     <p>등록된 관리자 이메일로만 들어올 수 있어요.</p>
     <div class="gate-card">
       <label class="in-label" for="email">관리자 이메일</label>
-      <input class="in" id="email" type="email" placeholder="teacher@neungdong.es.kr">
+      <input class="in" id="email" type="email" autocomplete="username" placeholder="teacher@neungdong.es.kr">
+      <label class="in-label" for="pw" style="margin-top:14px;">비밀번호 (숫자 4자리)</label>
+      <input class="in" id="pw" type="password" inputmode="numeric" autocomplete="current-password" maxlength="4" placeholder="••••">
       <button class="btn" id="loginBtn">로그인</button>
       <p class="msg" id="authMsg"></p>
+      <button class="ghost" id="forgotBtn" type="button" style="margin-top:12px;">비밀번호를 잊으셨나요?</button>
+      <p class="note2">처음 로그인하면 입력한 비밀번호로 자동 등록돼요. 등록된 관리자 이메일만 들어올 수 있어요.</p>
     </div>
   </div>
 </section>
@@ -144,7 +153,7 @@
       </div>
       <div class="right">
         <select class="seasonsel" id="seasonSel"></select>
-        <button class="addseason" id="addSeason">+ 새 시즌</button>
+        <button class="addseason" id="addSeason">+ 회차 등록</button>
         <button class="ghost" id="signoutBtn">로그아웃</button>
       </div>
     </div>
@@ -157,14 +166,34 @@
   <!-- ===== 현황 뷰 ===== -->
   <div class="wrap" id="viewStatus">
     <div class="cfg">
-      <span class="t">📅 시즌 시작일</span>
+      <span class="t">🏫 학교 이름</span>
+      <span class="d">가정 화면 하단에 표시돼요. 한 번만 등록하면 모든 가정·모든 시즌에 공통 적용돼요(다른 학교도 이 항목만 바꾸면 사용 가능).</span>
+      <input type="text" id="schoolName" placeholder="예: 능동초등학교">
+      <button id="saveSchool">저장</button>
+    </div>
+    <div class="cfg">
+      <span class="t">🔗 회차 링크 · 종료</span>
+      <span class="d">선택한 회차(<b id="curRoundLabel"></b>)의 가정용 링크예요. 이 링크를 학부모에게 배포하세요. 회차가 끝나면 ‘회차 종료’를 누르면 가정 화면이 종료 안내로 바뀌어요.</span>
+      <input type="text" id="roundLink" readonly style="flex:1;min-width:240px;">
+      <button id="copyLink">링크 복사</button>
+      <button id="setCurrent">기본 회차로</button>
+      <button id="toggleClosed">회차 종료</button>
+    </div>
+    <div class="cfg">
+      <span class="t">📅 회차 시작일</span>
       <span class="d">시작일을 정하면 가정 화면에서 "오늘 미션"이 자동으로 열리고, 지난 날은 잠겨요(월요일 시작 권장).</span>
       <input type="date" id="startDate">
       <button id="saveCfg">저장</button>
     </div>
+    <div class="cfg">
+      <span class="t">🎁 완주 기준</span>
+      <span class="d">6일 중 며칠 이상 완료하면 ‘완주’로 인정할지 정해요(회차별로 다르게 지정 가능).</span>
+      <input type="number" id="threshold" min="1" max="6" style="width:72px;"> <span style="font-size:13px;color:var(--ink-soft);">일 이상</span>
+      <button id="saveThreshold">저장</button>
+    </div>
     <div class="cards">
       <div class="scard"><div class="lab">참여 가정</div><div class="num" id="cFam">0<small>가정</small></div></div>
-      <div class="scard gift"><div class="lab">완주 가정 (5일↑)</div><div class="num" id="cFin">0<small>가정</small></div></div>
+      <div class="scard gift"><div class="lab">완주 가정 (<span id="finLabel">5</span>일↑)</div><div class="num" id="cFin">0<small>가정</small></div></div>
       <div class="scard"><div class="lab">완주율</div><div class="num" id="cRate">0<small>%</small></div></div>
       <div class="scard"><div class="lab">평균 완료일</div><div class="num" id="cAvg">0<small>일</small></div></div>
     </div>
@@ -176,14 +205,14 @@
       <button class="csvbtn" id="csvBtn">📄 보고서용 CSV 내보내기</button>
     </div>
     <div class="tablewrap"><table>
-      <thead><tr><th class="fam">가정</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>주말</th><th>완료일</th><th>완주</th></tr></thead>
+      <thead><tr><th class="fam">가정</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>주말</th><th>완료일</th><th>완주</th><th>관리</th></tr></thead>
       <tbody id="tbody"></tbody>
     </table></div>
   </div>
 
   <!-- ===== 미션 편집 뷰 ===== -->
   <div class="wrap" id="viewMissions" hidden>
-    <p class="me-intro">✏️ <b id="meSeason"></b> 미션을 자유롭게 바꿀 수 있어요. 저장하면 가정 화면에 바로 반영돼요. 시즌마다 다른 미션을 넣을 수 있어, <b>2학기·내년에도 시즌만 바꿔 그대로 재사용</b>할 수 있어요.</p>
+    <p class="me-intro">✏️ <b id="meSeason"></b>의 요일별 미션을 자유롭게 바꿀 수 있어요. 저장하면 그 회차 링크로 들어온 가정 화면에 바로 반영돼요. 회차마다 다른 미션을 넣을 수 있어, <b>다음 회차·내년에도 회차만 새로 등록해 재사용</b>할 수 있어요.</p>
     <div class="me-grid" id="missionEditor"></div>
     <div class="savebar">
       <span class="hint">변경 후 꼭 저장을 눌러주세요.</span>
@@ -211,7 +240,8 @@ const firebaseConfig = {
 };
 const ADMIN_EMAILS = ["mysociety053@gmail.com"];
 let   SEASON = "2026-1";
-const NUM_DAYS = 6, COMPLETE_THRESHOLD = 5;
+const NUM_DAYS = 6;
+let   COMPLETE_THRESHOLD = 5; // 완주 기준 일수 — 회차별로 관리자가 지정(config/{회차}.threshold)
 const DAY_LABELS = ["월","화","수","목","금","주말"];
 const firebaseReady = !firebaseConfig.apiKey.includes("여기에");
 
@@ -225,19 +255,19 @@ const DEFAULT_MISSIONS = [
 ];
 
 let rows=[], editMissions=structuredClone(DEFAULT_MISSIONS);
+let deleteFamilyFn=()=>{}; // 모드(데모/실제)에 따라 가정 삭제 동작을 연결
 
 const S={auth:document.getElementById('adminAuth'),deny:document.getElementById('adminDenied'),dash:document.getElementById('adminDash')};
 function show(n){for(const k in S)S[k].hidden=(k!==n);}
 
-/* 시즌 셀렉트 채우기 */
-const seasonOptions=["2026-1","2026-2","2027-1","2027-2"];
+/* 회차(=학년도-회차) 셀렉트 채우기 */
+let seasonList=["2026-1","2026-2","2027-1","2027-2"]; // 데모 기본값 — 실제 모드에서 Firestore로 교체
 function fillSeasons(){const sel=document.getElementById('seasonSel');sel.innerHTML='';
-  seasonOptions.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=labelSeason(s);if(s===SEASON)o.selected=true;sel.appendChild(o);});}
-function labelSeason(s){const [y,h]=s.split('-');return y+'년 '+h+'학기';}
-document.getElementById('addSeason').onclick=()=>{
-  const v=window.prompt('새 시즌 코드를 입력하세요 (예: 2028-1)');
-  if(v&&!seasonOptions.includes(v)){seasonOptions.push(v);fillSeasons();}
-};
+  if(!seasonList.length)seasonList=[SEASON];
+  seasonList.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=labelSeason(s);if(s===SEASON)o.selected=true;sel.appendChild(o);});}
+function labelSeason(s){const [y,r]=s.split('-');return y+'학년도 '+r+'회차';}
+/* 선택한 회차의 가정용 링크 (배포 시 이 주소를 학부모에게) */
+function roundUrl(){const base=(location.origin&&location.origin!=='null')?location.origin:'';return base+'/?s='+SEASON;}
 
 /* 탭 전환 */
 function setTab(t){
@@ -281,6 +311,7 @@ function render(){
   const fin=rows.filter(r=>completedCount(r)>=COMPLETE_THRESHOLD).length, tot=rows.length;
   document.getElementById('cFam').innerHTML=tot+'<small>가정</small>';
   document.getElementById('cFin').innerHTML=fin+'<small>가정</small>';
+  document.getElementById('finLabel').textContent=COMPLETE_THRESHOLD;
   document.getElementById('cRate').innerHTML=(tot?Math.round(fin/tot*100):0)+'<small>%</small>';
   document.getElementById('cAvg').innerHTML=(tot?(rows.reduce((s,r)=>s+completedCount(r),0)/tot):0).toFixed(1)+'<small>일</small>';
   const tb=document.getElementById('tbody');tb.innerHTML='';
@@ -293,9 +324,11 @@ function render(){
     const c=completedCount(r),done=c>=COMPLETE_THRESHOLD;
     html+='<td><span class="cnt">'+c+'</span></td>';
     html+='<td>'+(done?'<span class="badge fin">🎁 완주</span>':'<span class="badge no">미완주</span>')+'</td>';
+    html+='<td><button class="delbtn" data-uid="'+r.uid+'">🗑 삭제</button></td>';
     tr.innerHTML=html;tb.appendChild(tr);
   });
   tb.querySelectorAll('.cell.done').forEach(el=>el.onclick=()=>openDetail(el.dataset.uid,+el.dataset.day));
+  tb.querySelectorAll('.delbtn').forEach(el=>el.onclick=()=>deleteFamilyFn(el.dataset.uid));
 }
 function openDetail(uid,day){
   const r=rows.find(x=>x.uid===uid);if(!r)return;const e=r.entries[day];if(!e)return;
@@ -334,42 +367,148 @@ function runDemo(){
   rows=[mk('u1',3,2,15,'parent_a@email.com',[0,1,2,3,4,5]),mk('u2',3,2,7,'parent_b@email.com',[0,1,3,4]),
         mk('u3',4,1,3,'parent_c@email.com',[0,1,2,3,4]),mk('u4',1,3,22,'parent_d@email.com',[0,2,4,5]),
         mk('u5',5,2,9,'parent_e@email.com',[0,1,2,3,4,5]),mk('u6',6,1,11,'parent_f@email.com',[0,1])];
+  function demoPanel(){
+    document.getElementById('curRoundLabel').textContent=labelSeason(SEASON);
+    document.getElementById('roundLink').value=roundUrl();
+    document.getElementById('setCurrent').textContent='기본 회차로';
+    document.getElementById('toggleClosed').textContent='회차 종료';
+    document.getElementById('threshold').value=COMPLETE_THRESHOLD;
+  }
   show('auth');
-  document.getElementById('loginBtn').onclick=()=>{render();show('dash');};
+  document.getElementById('loginBtn').onclick=()=>{render();demoPanel();show('dash');};
+  document.getElementById('forgotBtn').onclick=()=>alert('(데모) 실제 배포 시에는 입력한 이메일로 비밀번호 재설정 메일이 전송돼요.');
   document.getElementById('signoutBtn').onclick=()=>show('auth');
   document.getElementById('denyBack').onclick=()=>show('auth');
+  deleteFamilyFn=(uid)=>{
+    const r=rows.find(x=>x.uid===uid);
+    if(!confirm('(데모) 이 가정을 목록에서 지울까요?\n'+(r?r.grade+'-'+r.classNo+' '+r.studentNo+'번':uid)))return;
+    rows=rows.filter(x=>x.uid!==uid);render();
+  };
+  document.getElementById('addSeason').onclick=()=>{
+    const year=(window.prompt('학년도 (4자리, 예: 2026)')||'').trim(); if(!year)return;
+    const round=(window.prompt('회차 (숫자, 예: 1)')||'').trim(); if(!round)return;
+    const code=year+'-'+round;
+    if(!/^\d{4}-\d+$/.test(code)){alert('형식이 올바르지 않아요.');return;}
+    if(!seasonList.includes(code))seasonList.push(code);
+    seasonList.sort(); SEASON=code; editMissions=structuredClone(DEFAULT_MISSIONS);
+    fillSeasons(); render(); renderEditor(); demoPanel();
+  };
+  document.getElementById('copyLink').onclick=()=>alert('가정용 링크 (데모):\n'+roundUrl());
+  document.getElementById('setCurrent').onclick=()=>alert('(데모) 이 회차를 기본 회차로 지정하면 ?s= 없는 주소로 이 회차가 열려요.');
+  document.getElementById('toggleClosed').onclick=()=>alert('(데모) 회차를 종료하면 가정 화면이 "회차가 마무리되었어요" 안내로 바뀌어요.');
   document.getElementById('saveCfg').onclick=()=>alert('(데모) 시작일이 저장되면 가정 화면의 "오늘 미션"이 이 날짜를 기준으로 열려요.');
+  document.getElementById('saveThreshold').onclick=()=>{
+    let v=Number(document.getElementById('threshold').value);
+    if(v>=1&&v<=NUM_DAYS){COMPLETE_THRESHOLD=Math.round(v);render();}
+    alert('(데모) 완주 기준이 저장되면 현황·완주율이 이 기준으로 계산돼요.');
+  };
+  document.getElementById('saveSchool').onclick=()=>alert('(데모) 학교 이름이 저장되면 가정 화면 하단에 그 이름이 표시돼요.');
   document.getElementById('saveMissions').onclick=()=>alert('(데모) 저장하면 '+labelSeason(SEASON)+' 미션이 가정 화면에 즉시 반영돼요.');
-  document.getElementById('seasonSel').onchange=e=>{SEASON=e.target.value;editMissions=structuredClone(DEFAULT_MISSIONS);render();renderEditor();};
+  document.getElementById('seasonSel').onchange=e=>{SEASON=e.target.value;editMissions=structuredClone(DEFAULT_MISSIONS);render();renderEditor();demoPanel();};
 }
 
 /* ===================== 실제 모드 ===================== */
 async function runFirebase(){
   const [{initializeApp},
-         {getAuth,sendSignInLinkToEmail,isSignInWithEmailLink,signInWithEmailLink,onAuthStateChanged,signOut},
-         {getFirestore,collection,getDocs,query,where,doc,setDoc,getDoc}]=await Promise.all([
+         {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut},
+         {getFirestore,collection,getDocs,query,where,doc,setDoc,getDoc,deleteDoc},
+         {getFunctions,httpsCallable}]=await Promise.all([
     import("https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js"),
     import("https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js"),
-    import("https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js")]);
+    import("https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js"),
+    import("https://www.gstatic.com/firebasejs/11.0.0/firebase-functions.js")]);
   const app=initializeApp(firebaseConfig);const auth=getAuth(app),db=getFirestore(app);
-  const acs={url:window.location.href,handleCodeInApp:true};
+  const functions=getFunctions(app,'asia-northeast3');
+  // 4자리 PIN을 Firebase 최소 길이(6자)에 맞추는 고정 접미사 — index.html·functions/index.js의 PIN_PAD와 반드시 동일
+  const PIN_PAD='ndg!';
   fillSeasons();
 
-  document.getElementById('loginBtn').onclick=async()=>{
-    const email=document.getElementById('email').value.trim();const m=document.getElementById('authMsg');
-    if(!email){m.textContent='이메일을 입력해주세요.';m.classList.add('show');return;}
-    try{await sendSignInLinkToEmail(auth,email,acs);window.localStorage.setItem('adminEmail',email);
-        m.textContent='확인 메일을 보냈어요. 메일의 링크를 눌러 로그인해주세요.';m.classList.add('show');}
-    catch(e){m.textContent='전송 실패: '+e.message;m.classList.add('show');}
+  // 가정 삭제: 기록·사진·로그인 계정까지 모두 영구 삭제 (Cloud Function이 Admin 권한으로 처리)
+  deleteFamilyFn=async(uid)=>{
+    const r=rows.find(x=>x.uid===uid);
+    const who=r?(r.grade+'-'+r.classNo+' '+r.studentNo+'번 ('+r.email+')'):uid;
+    if(!confirm('정말 이 가정을 삭제할까요?\n\n'+who+'\n\n이 가정의 기록·사진·로그인 계정이 모두 영구 삭제되며 되돌릴 수 없어요.'))return;
+    try{
+      await httpsCallable(functions,'deleteFamily')({uid});
+      await loadAll();
+    }catch(e){ alert('삭제에 실패했어요: '+(e.message||e)); }
   };
-  if(isSignInWithEmailLink(auth,window.location.href)){
-    let email=window.localStorage.getItem('adminEmail')||window.prompt('이메일을 다시 입력해주세요');
-    try{await signInWithEmailLink(auth,email,window.location.href);window.localStorage.removeItem('adminEmail');}catch(e){}
+
+  // 회차 등록: 학년도 + 회차 → config/{학년도-회차} 문서 생성
+  document.getElementById('addSeason').onclick=async()=>{
+    const year=(window.prompt('학년도를 입력하세요 (4자리 숫자, 예: 2026)')||'').trim(); if(!year)return;
+    const round=(window.prompt('회차를 입력하세요 (숫자, 예: 1)')||'').trim(); if(!round)return;
+    const code=year+'-'+round;
+    if(!/^\d{4}-\d+$/.test(code)){alert('형식이 올바르지 않아요. 학년도는 4자리 숫자, 회차는 숫자로 입력해주세요.');return;}
+    await setDoc(doc(db,'config',code),{year:Number(year),round:Number(round),createdAt:Date.now()},{merge:true});
+    SEASON=code; await loadSeasons(); await loadAll();
+    alert(labelSeason(code)+'를 등록했어요. ‘미션 편집’ 탭에서 요일별 미션을 입력하고 저장하세요.');
+  };
+
+  // 회차 관리: 링크 복사 / 기본 회차 지정 / 종료·재개
+  document.getElementById('copyLink').onclick=()=>{
+    const inp=document.getElementById('roundLink'); inp.select();
+    try{navigator.clipboard&&navigator.clipboard.writeText(inp.value);}catch(e){}
+    alert('가정용 링크를 복사했어요:\n'+inp.value);
+  };
+  document.getElementById('setCurrent').onclick=async()=>{
+    await setDoc(doc(db,'config','site'),{currentRound:SEASON},{merge:true});
+    alert(labelSeason(SEASON)+'를 기본 회차로 지정했어요.\n(?s= 없는 기본 주소로 들어오면 이 회차가 열려요)');
+    await loadAll();
+  };
+  document.getElementById('toggleClosed').onclick=async()=>{
+    let cur=false;try{const c=await getDoc(doc(db,'config',SEASON));cur=!!(c.exists()&&c.data().closed);}catch(e){}
+    const next=!cur;
+    if(next && !confirm(labelSeason(SEASON)+'를 종료할까요?\n가정 화면이 "회차가 마무리되었어요" 안내로 바뀌고 더 이상 기록할 수 없어요. (언제든 다시 재개할 수 있어요)'))return;
+    await setDoc(doc(db,'config',SEASON),{closed:next},{merge:true});
+    alert(next?'회차를 종료했어요.':'회차를 다시 열었어요.');
+    await loadAll();
+  };
+
+  // 등록된 회차 목록 로드 (config 컬렉션에서 '학년도-회차' 형식 문서만)
+  async function loadSeasons(){
+    let list=[];
+    try{const snap=await getDocs(collection(db,'config'));list=snap.docs.map(d=>d.id).filter(id=>/^\d{4}-\d+$/.test(id));}catch(e){}
+    list.sort();
+    seasonList = list.length?list:[SEASON];
+    if(!seasonList.includes(SEASON)) SEASON=seasonList[seasonList.length-1];
+    fillSeasons();
   }
+
+  const m=document.getElementById('authMsg');
+  function amsg(t,err){m.textContent=t;m.classList.toggle('err',!!err);m.classList.add('show');}
+  // 로그인: 이메일 + 4자리 PIN (처음이면 자동 가입, 이후 로그인). 관리자 외 이메일은 가입돼도 접근 거부됨.
+  document.getElementById('loginBtn').onclick=async()=>{
+    const email=document.getElementById('email').value.trim();
+    const pin=document.getElementById('pw').value.trim();
+    if(!email){amsg('이메일을 입력해주세요.',true);return;}
+    if(!/^\d{4}$/.test(pin)){amsg('비밀번호는 숫자 4자리로 입력해주세요.',true);return;}
+    const pw=pin+PIN_PAD;
+    const btn=document.getElementById('loginBtn'); btn.disabled=true; amsg('확인 중이에요…',false);
+    try{
+      try{ await createUserWithEmailAndPassword(auth,email,pw); }
+      catch(e){ if(e.code==='auth/email-already-in-use'){ await signInWithEmailAndPassword(auth,email,pw); } else throw e; }
+    }catch(e){
+      if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential') amsg('비밀번호가 일치하지 않아요. 아래 ‘비밀번호를 잊으셨나요?’로 재설정할 수 있어요.',true);
+      else if(e.code==='auth/invalid-email') amsg('이메일 형식을 확인해주세요.',true);
+      else amsg('로그인 실패: '+e.message,true);
+      btn.disabled=false;
+    }
+  };
+  // 비밀번호 찾기: 새 4자리 PIN을 메일로 발송 (가정과 동일한 resetPin 함수 재사용)
+  document.getElementById('forgotBtn').onclick=async()=>{
+    const email=document.getElementById('email').value.trim();
+    if(!email){amsg('먼저 이메일을 입력해주세요.',true);return;}
+    const btn=document.getElementById('forgotBtn'); btn.disabled=true;
+    amsg('새 비밀번호를 메일로 보내는 중이에요…',false);
+    try{ await httpsCallable(functions,'resetPin')({email}); amsg('입력하신 이메일로 새 비밀번호 4자리를 보냈어요. 메일함(스팸함 포함)을 확인해주세요.',false); }
+    catch(e){ amsg('메일 전송에 실패했어요. 잠시 후 다시 시도해주세요.',true); }
+    btn.disabled=false;
+  };
   onAuthStateChanged(auth,async(user)=>{
-    if(!user){show('auth');return;}
+    if(!user){document.getElementById('loginBtn').disabled=false;document.getElementById('pw').value='';show('auth');return;}
     if(!ADMIN_EMAILS.includes(user.email)){show('deny');return;}
-    await loadAll();show('dash');
+    await loadSeasons();await loadAll();show('dash');
   });
   document.getElementById('signoutBtn').onclick=()=>signOut(auth);
   document.getElementById('denyBack').onclick=()=>signOut(auth);
@@ -377,6 +516,19 @@ async function runFirebase(){
   document.getElementById('saveCfg').onclick=async()=>{
     const d=document.getElementById('startDate').value;if(!d)return;
     await setDoc(doc(db,'config',SEASON),{startDate:d},{merge:true});alert('시작일을 저장했어요.');
+  };
+  document.getElementById('saveThreshold').onclick=async()=>{
+    let v=Number(document.getElementById('threshold').value);
+    if(!(v>=1&&v<=NUM_DAYS)){alert('1부터 '+NUM_DAYS+' 사이의 숫자로 입력해주세요.');return;}
+    v=Math.round(v);
+    await setDoc(doc(db,'config',SEASON),{threshold:v},{merge:true});
+    COMPLETE_THRESHOLD=v; render();
+    alert('완주 기준을 '+v+'일 이상으로 저장했어요.');
+  };
+  document.getElementById('saveSchool').onclick=async()=>{
+    const v=document.getElementById('schoolName').value.trim();
+    await setDoc(doc(db,'config','site'),{schoolName:v},{merge:true});
+    alert('학교 이름을 저장했어요. 가정 화면에 반영돼요.');
   };
   document.getElementById('saveMissions').onclick=async()=>{
     await setDoc(doc(db,'config',SEASON),{missions:editMissions},{merge:true});
@@ -388,6 +540,19 @@ async function runFirebase(){
     let cfg=null;try{const c=await getDoc(doc(db,'config',SEASON));if(c.exists())cfg=c.data();}catch(e){}
     editMissions = (cfg&&cfg.missions&&cfg.missions.length===NUM_DAYS) ? structuredClone(cfg.missions) : structuredClone(DEFAULT_MISSIONS);
     if(cfg&&cfg.startDate)document.getElementById('startDate').value=cfg.startDate; else document.getElementById('startDate').value='';
+    // 완주 기준 일수(회차별) — 미설정 시 5일
+    COMPLETE_THRESHOLD = (cfg&&cfg.threshold) ? cfg.threshold : 5;
+    document.getElementById('threshold').value = COMPLETE_THRESHOLD;
+    // 사이트 공통 설정(학교 이름·기본 회차)
+    let site=null;try{const s=await getDoc(doc(db,'config','site'));if(s.exists())site=s.data();}catch(e){}
+    document.getElementById('schoolName').value=(site&&site.schoolName)||'';
+    // 회차 관리 패널 갱신 (링크·기본 회차·종료 상태)
+    document.getElementById('curRoundLabel').textContent=labelSeason(SEASON);
+    document.getElementById('roundLink').value=roundUrl();
+    const isCurrent=!!(site&&site.currentRound===SEASON);
+    const sc=document.getElementById('setCurrent');
+    sc.textContent=isCurrent?'기본 회차 ✓':'기본 회차로'; sc.disabled=isCurrent;
+    document.getElementById('toggleClosed').textContent=(cfg&&cfg.closed)?'회차 재개':'회차 종료';
     renderEditor();
     // 명부 + 기록
     const map={};

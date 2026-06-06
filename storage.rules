@@ -17,13 +17,14 @@ service firebase.storage {
       ];
     }
 
-    // entries/{uid}/...  : 본인만 업로드, 본인·관리자만 읽기
+    // entries/{uid}/...  : 본인만 업로드, 본인·관리자만 읽기, 관리자는 삭제 가능(가정 정리 시)
     match /entries/{uid}/{fileName} {
-      allow read:  if isAdmin() || (isSignedIn() && request.auth.uid == uid);
-      allow write: if isSignedIn()
-                   && request.auth.uid == uid
-                   && request.resource.size < 8 * 1024 * 1024          // 8MB 이하
-                   && request.resource.contentType.matches('image/.*'); // 이미지만
+      allow read:   if isAdmin() || (isSignedIn() && request.auth.uid == uid);
+      allow write:  if isSignedIn()
+                    && request.auth.uid == uid
+                    && request.resource.size < 8 * 1024 * 1024          // 8MB 이하
+                    && request.resource.contentType.matches('image/.*'); // 이미지만
+      allow delete: if isAdmin();
     }
   }
 }

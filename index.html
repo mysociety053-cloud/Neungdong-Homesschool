@@ -55,6 +55,14 @@
     background:var(--honey-wash);border-radius:11px;padding:10px 12px;}
   .msg{font-size:13px;color:var(--green);margin-top:14px;line-height:1.5;display:none;}
   .msg.show{display:block;}
+  .msg.err{color:#C5503B;}
+  .linkbtn{display:block;margin:14px auto 0;background:none;border:none;color:var(--honey-deep);
+    font-family:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+  .consent{display:flex;gap:9px;align-items:flex-start;margin:0 0 4px;font-size:12px;color:var(--ink-soft);
+    line-height:1.55;cursor:pointer;background:var(--honey-wash);border-radius:12px;padding:12px 13px;}
+  .consent input{margin-top:2px;width:16px;height:16px;flex:none;accent-color:var(--honey-deep);cursor:pointer;}
+  .consent b{color:var(--ink);}
+  .in:disabled{background:#F4EFE4;color:#C2B299;cursor:not-allowed;}
 
   /* ---------- app header ---------- */
   header{padding:30px 4px 8px;text-align:center;}
@@ -182,16 +190,25 @@
     <div class="gate">
       <span class="eyebrow">능동 디지털 인성교육 프로젝트</span>
       <h1 class="slogan">잠시 멈추면,<br><b>가족이 보여요</b></h1>
-      <p class="lead">이메일로 간편하게 시작해요.<br>한 번 설정하면 다음부터는 이메일만 입력하면 돼요.</p>
+      <p class="lead">이메일과 비밀번호 4자리로 시작해요.<br>처음이면 입력한 4자리가 그대로 비밀번호로 등록돼요.</p>
 
       <div class="gate-card">
         <h2>이메일로 시작하기</h2>
-        <p class="desc">입력하신 주소로 확인 링크를 보내드려요</p>
+        <p class="desc">처음이면 자동 가입, 다음부터는 같은 비밀번호로 로그인돼요</p>
+        <label class="consent">
+          <input type="checkbox" id="consent">
+          <span><b>[필수] 개인정보 수집·이용 동의</b><br>
+          로그인에 사용하는 <b>이메일·비밀번호</b>와 미션 기록을 수집·이용하는 데 동의합니다.
+          수집한 <b>개인정보는 미션 기간 종료 후에 자동으로 폐기됩니다.</b></span>
+        </label>
         <label class="in-label" for="email">학부모 이메일</label>
-        <input class="in" id="email" type="email" inputmode="email" placeholder="example@email.com">
+        <input class="in" id="email" type="email" inputmode="email" autocomplete="username" placeholder="example@email.com">
+        <label class="in-label" for="pin">비밀번호 (숫자 4자리)</label>
+        <input class="in" id="pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="4" placeholder="••••">
         <button class="btn" id="loginBtn">시작하기</button>
         <p class="msg" id="authMsg"></p>
-        <p class="note">🔒 이메일은 가정을 구분하고 활동을 저장하는 용도로만 쓰이며, 외부에 공개되지 않아요.</p>
+        <button class="linkbtn" id="forgotBtn" type="button">비밀번호를 잊으셨나요?</button>
+        <p class="note">🔒 이메일은 가정을 구분하는 용도로만 쓰이고, 비밀번호는 암호화되어 저장돼요. 관리자(선생님)도 볼 수 없어요.</p>
       </div>
     </div>
   </section>
@@ -328,7 +345,7 @@
       </div>
     </div>
 
-    <footer>능동초등학교 · 가족이 함께 쓰는 디지털 인성 한 칸<br>화면을 끄고, 마음을 켜요</footer>
+    <footer><span id="footSchool">능동초등학교</span> · 가족이 함께 쓰는 디지털 인성 한 칸<br>화면을 끄고, 마음을 켜요</footer>
     <button class="signout" id="signoutBtn">로그아웃</button>
   </section>
 
@@ -349,9 +366,11 @@ const firebaseConfig = {
   appId: "1:90743477473:web:b9ae303904acacade6d3a0",
   measurementId: "G-WQ1929803W"
 };
-const SEASON = "2026-1";          // 시즌 구분(1학기 / 2학기 등)
+// 회차 구분 = "학년도-회차" (예: 2026-1). 링크의 ?s= 값으로 회차가 결정됨
+let   SEASON = "2026-1";          // 기본값 — URL ?s= 또는 관리자 지정 기본 회차로 덮어씀
+const urlRound = (new URLSearchParams(location.search).get('s')||'').trim();
 const NUM_DAYS = 6;               // 월·화·수·목·금·주말 = 6일
-const COMPLETE_THRESHOLD = 5;     // 5일 이상 완료하면 완주
+let   COMPLETE_THRESHOLD = 5;     // 완주 기준 일수 — 회차 설정(config/{회차}.threshold)으로 덮어씀
 let   todayIdx = 5;               // 데모: 주말 미션 표시 / 실제 배포 시 날짜로 자동 계산
 
 // 키가 채워져 있으면 실제 모드, 아니면 데모 모드
@@ -530,6 +549,17 @@ const gradeEl=document.getElementById('grade'),classEl=document.getElementById('
 function checkSetup(){document.getElementById('setupBtn').disabled=!(gradeEl.value&&classEl.value&&numEl.value);}
 [gradeEl,classEl,numEl].forEach(el=>el.addEventListener('input',checkSetup));
 
+/* 개인정보 수집·이용 동의 — 동의해야 이메일·비밀번호 입력 및 로그인 가능 */
+const consentEl=document.getElementById('consent');
+function syncConsent(){
+  const ok=consentEl.checked;
+  document.getElementById('email').disabled=!ok;
+  document.getElementById('pin').disabled=!ok;
+  document.getElementById('loginBtn').disabled=!ok;
+}
+consentEl.addEventListener('change',syncConsent);
+syncConsent();
+
 /* ===================================================================
    데모 모드 — Firebase 키가 없을 때 화면 흐름만 미리보기
 =================================================================== */
@@ -538,9 +568,20 @@ function runDemo(){
   show('auth');
   document.getElementById('loginBtn').onclick=()=>{
     const m=document.getElementById('authMsg');
-    m.textContent='(데모) 실제 배포 시에는 이 주소로 확인 메일이 전송돼요. 다음 화면으로 넘어갑니다.';
+    const email=document.getElementById('email').value.trim();
+    const pin=document.getElementById('pin').value.trim();
+    m.classList.remove('err');
+    if(!email){m.textContent='이메일을 입력해주세요.';m.classList.add('show','err');return;}
+    if(!/^\d{4}$/.test(pin)){m.textContent='비밀번호는 숫자 4자리로 입력해주세요.';m.classList.add('show','err');return;}
+    m.textContent='(데모) 실제 배포 시에는 이메일·비밀번호로 로그인돼요. 다음 화면으로 넘어갑니다.';
     m.classList.add('show');
     setTimeout(()=>show('setup'),700);
+  };
+  document.getElementById('forgotBtn').onclick=()=>{
+    const m=document.getElementById('authMsg');
+    m.classList.remove('err');
+    m.textContent='(데모) 실제 배포 시에는 새 비밀번호 4자리를 이메일로 보내드려요.';
+    m.classList.add('show');
   };
   document.getElementById('setupBtn').onclick=()=>{
     renderMission(); renderProgress(todayIdx); show('app');
@@ -550,48 +591,87 @@ function runDemo(){
 }
 
 /* ===================================================================
-   실제 모드 — Firebase 연결 (이메일 링크 로그인 + Firestore + Storage)
+   실제 모드 — Firebase 연결 (이메일+비밀번호 4자리 로그인 + Firestore + Storage)
 =================================================================== */
 async function runFirebase(){
   const [{initializeApp},
-         {getAuth,sendSignInLinkToEmail,isSignInWithEmailLink,signInWithEmailLink,onAuthStateChanged,signOut},
+         {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut},
          {getFirestore,doc,getDoc,setDoc,collection,query,where,getDocs},
-         {getStorage,ref,uploadBytes,getDownloadURL}] = await Promise.all([
+         {getStorage,ref,uploadBytes,getDownloadURL},
+         {getFunctions,httpsCallable}] = await Promise.all([
     import("https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js"),
     import("https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js"),
     import("https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js"),
-    import("https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js")
+    import("https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js"),
+    import("https://www.gstatic.com/firebasejs/11.0.0/firebase-functions.js")
   ]);
 
   const app=initializeApp(firebaseConfig);
   const auth=getAuth(app), db=getFirestore(app), storage=getStorage(app);
-  const acs={url:window.location.href, handleCodeInApp:true};
+  const functions=getFunctions(app,'asia-northeast3'); // 비밀번호 재설정 함수 리전(서울)
+  // 4자리 PIN을 Firebase 최소 길이(6자)에 맞추는 고정 접미사 — functions/index.js의 값과 반드시 동일해야 함
+  const PIN_PAD='ndg!';
   let uid=null, profile=null;
 
-  // 1) 로그인: 이메일로 링크 보내기
+  const authMsg=document.getElementById('authMsg');
+  function showMsg(text,isErr){authMsg.textContent=text;authMsg.classList.toggle('err',!!isErr);authMsg.classList.add('show');}
+
+  // 1) 로그인: 이메일 + 4자리 PIN (처음이면 자동 가입, 기존이면 로그인)
   document.getElementById('loginBtn').onclick=async()=>{
     const email=document.getElementById('email').value.trim();
-    const m=document.getElementById('authMsg');
-    if(!email){m.textContent='이메일을 입력해주세요.';m.classList.add('show');return;}
+    const pin=document.getElementById('pin').value.trim();
+    if(!email){showMsg('이메일을 입력해주세요.',true);return;}
+    if(!/^\d{4}$/.test(pin)){showMsg('비밀번호는 숫자 4자리로 입력해주세요.',true);return;}
+    const pw=pin+PIN_PAD;
+    const btn=document.getElementById('loginBtn'); btn.disabled=true;
+    showMsg('확인 중이에요…',false);
     try{
-      await sendSignInLinkToEmail(auth,email,acs);
-      window.localStorage.setItem('emailForSignIn',email);
-      m.textContent='확인 메일을 보냈어요. 메일의 링크를 눌러 로그인해주세요.';
-      m.classList.add('show');
-    }catch(e){m.textContent='메일 전송에 실패했어요: '+e.message;m.classList.add('show');}
+      try{
+        await createUserWithEmailAndPassword(auth,email,pw); // 처음이면 가입
+      }catch(e){
+        if(e.code==='auth/email-already-in-use'){
+          await signInWithEmailAndPassword(auth,email,pw);   // 기존 회원이면 로그인
+        }else{ throw e; }
+      }
+      // 이후 화면 전환은 onAuthStateChanged가 처리
+    }catch(e){
+      if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential'){
+        showMsg('비밀번호가 일치하지 않아요. 다시 확인하거나 아래 ‘비밀번호를 잊으셨나요?’를 눌러주세요.',true);
+      }else if(e.code==='auth/invalid-email'){
+        showMsg('이메일 형식을 확인해주세요.',true);
+      }else if(e.code==='auth/too-many-requests'){
+        showMsg('시도가 많아 잠시 막혔어요. 잠시 후 다시 시도해주세요.',true);
+      }else{
+        showMsg('로그인에 실패했어요: '+e.message,true);
+      }
+      btn.disabled=false;
+    }
   };
 
-  // 2) 메일 링크로 돌아온 경우 자동 로그인 처리
-  if(isSignInWithEmailLink(auth,window.location.href)){
-    let email=window.localStorage.getItem('emailForSignIn');
-    if(!email) email=window.prompt('확인을 위해 이메일을 다시 입력해주세요');
-    try{ await signInWithEmailLink(auth,email,window.location.href);
-         window.localStorage.removeItem('emailForSignIn'); }catch(e){}
-  }
+  // 2) 비밀번호 찾기: 새 4자리 PIN을 메일로 발송 (Cloud Function이 비번 재설정 후 메일 전송)
+  document.getElementById('forgotBtn').onclick=async()=>{
+    const email=document.getElementById('email').value.trim();
+    if(!email){showMsg('먼저 가입한 이메일을 입력해주세요.',true);return;}
+    const btn=document.getElementById('forgotBtn'); btn.disabled=true;
+    showMsg('새 비밀번호를 메일로 보내는 중이에요…',false);
+    try{
+      await httpsCallable(functions,'resetPin')({email});
+      showMsg('입력하신 이메일로 새 비밀번호 4자리를 보냈어요. 메일함(스팸함 포함)을 확인해주세요.',false);
+    }catch(e){
+      showMsg('메일 전송에 실패했어요. 잠시 후 다시 시도해주세요.',true);
+    }
+    btn.disabled=false;
+  };
 
   // 3) 로그인 상태 감지 → 설정 여부에 따라 화면 분기
   onAuthStateChanged(auth,async(user)=>{
-    if(!user){show('auth');return;}
+    if(!user){
+      consentEl.checked=false;          // 로그아웃 시 개인정보 동의 다시 받기
+      document.getElementById('pin').value='';
+      syncConsent();                    // 동의 전까지 로그인 버튼 비활성화
+      authMsg.classList.remove('show','err');
+      show('auth');return;
+    }
     uid=user.uid;
     const snap=await getDoc(doc(db,'families',uid));
     if(snap.exists()){ profile=snap.data(); await enterApp(); }
@@ -607,18 +687,29 @@ async function runFirebase(){
 
   // 5) 메인 화면 진입 + 미션 불러오기 + 완료한 날 수 집계
   async function enterApp(){
-    // 관리자가 저장한 시즌 미션·시작일 불러오기
-    let startDate=null;
+    // 사이트 공통 설정(학교 이름·기본 회차) 읽기
+    let site=null;
+    try{ const s=await getDoc(doc(db,'config','site')); if(s.exists()) site=s.data(); }catch(e){}
+    // 회차 결정: URL ?s= 우선 → 관리자가 지정한 기본 회차 → 기본값
+    if(/^\d{4}-\d+$/.test(urlRound)) SEASON=urlRound;
+    else if(site && site.currentRound) SEASON=site.currentRound;
+    // 학교 이름을 푸터에 반영 — 미등록 시 기본값 유지
+    if(site && site.schoolName) document.getElementById('footSchool').textContent=site.schoolName;
+
+    // 해당 회차의 미션·시작일·종료여부 불러오기
+    let startDate=null, closed=false;
     try{
       const cfg=await getDoc(doc(db,'config',SEASON));
       if(cfg.exists()){
         const c=cfg.data();
         if(c.missions && c.missions.length===NUM_DAYS) MISSIONS=c.missions;
         if(c.startDate) startDate=c.startDate;
+        if(c.threshold) COMPLETE_THRESHOLD=c.threshold;
+        if(c.closed) closed=true;
       }
     }catch(e){}
-    // 시작일 기준 상태 판정 — 시작 전·종료·미설정이면 안내 화면, 진행 중일 때만 미션 열기
-    const st=programStatus(startDate);
+    // 상태 판정 — 관리자가 종료했으면 종료 화면, 아니면 시작일 기준(시작 전·종료·미설정/진행 중)
+    const st = closed ? {state:'after'} : programStatus(startDate);
     if(st.state!=='active'){ showNotice(st); return; }
     todayIdx=st.idx; // 시작일 기준 오늘 미션 자동 선택
     renderMission();

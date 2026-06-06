@@ -18,22 +18,23 @@ service cloud.firestore {
       ];
     }
 
-    // 가정 프로필: 본인만 읽기/쓰기, 관리자는 전체 읽기
+    // 가정 프로필: 본인만 읽기/쓰기, 관리자는 전체 읽기 + 삭제(잘못/연습 가정 정리)
     match /families/{uid} {
       allow read:  if isAdmin() || (isSignedIn() && request.auth.uid == uid);
       allow write: if isSignedIn()
                    && request.auth.uid == uid
                    && request.resource.data.email == request.auth.token.email;
+      allow delete: if isAdmin();
     }
 
-    // 일일 기록: 본인 기록만 작성/수정, 관리자는 전체 읽기, 삭제 불가
+    // 일일 기록: 본인 기록만 작성/수정, 관리자는 전체 읽기 + 삭제(가정 정리 시), 본인 삭제 불가
     match /entries/{entryId} {
       allow read:   if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
       allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
       allow update: if isSignedIn()
                     && resource.data.uid == request.auth.uid
                     && request.resource.data.uid == request.auth.uid;
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
 
     // 시즌 설정(미션·시작일): 로그인하면 읽기, 관리자만 쓰기
