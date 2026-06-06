@@ -346,6 +346,7 @@
     </div>
 
     <footer><span id="footSchool">능동초등학교</span> · 가족이 함께 쓰는 디지털 인성 한 칸<br>화면을 끄고, 마음을 켜요</footer>
+    <button class="signout" id="changePwBtn">비밀번호 변경</button>
     <button class="signout" id="signoutBtn">로그아웃</button>
   </section>
 
@@ -632,7 +633,7 @@ function runDemo(){
 =================================================================== */
 async function runFirebase(){
   const [{initializeApp},
-         {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut},
+         {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut,updatePassword,reauthenticateWithCredential,EmailAuthProvider},
          {getFirestore,doc,getDoc,setDoc,collection,query,where,getDocs},
          {getStorage,ref,uploadBytes,getDownloadURL},
          {getFunctions,httpsCallable}] = await Promise.all([
@@ -786,6 +787,27 @@ async function runFirebase(){
 
   document.getElementById('signoutBtn').onclick=()=>signOut(auth);
   document.getElementById('noticeSignout').onclick=()=>signOut(auth);
+
+  // 비밀번호 변경: 지금 비밀번호로 재인증한 뒤 원하는 새 4자리로 변경 (임시 비번을 받은 가정도 사용)
+  document.getElementById('changePwBtn').onclick=async()=>{
+    const u=auth.currentUser; if(!u){show('auth');return;}
+    const cur=(window.prompt('지금 쓰는 비밀번호 4자리를 입력하세요.\n(메일로 임시 비밀번호를 받았다면 그 번호예요)')||'').trim();
+    if(!cur) return;
+    if(!/^\d{4}$/.test(cur)){ alert('비밀번호는 숫자 4자리예요.'); return; }
+    const np=(window.prompt('새로 쓸 비밀번호 4자리 숫자를 입력하세요.')||'').trim();
+    if(!np) return;
+    if(!/^\d{4}$/.test(np)){ alert('비밀번호는 숫자 4자리로 입력해주세요.'); return; }
+    try{
+      const cred=EmailAuthProvider.credential(u.email, cur+PIN_PAD);
+      await reauthenticateWithCredential(u, cred);
+      await updatePassword(u, np+PIN_PAD);
+      alert('비밀번호를 바꿨어요. 앞으로 새 4자리로 로그인하세요.');
+    }catch(e){
+      if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential') alert('지금 비밀번호가 일치하지 않아요. 다시 확인해주세요.');
+      else if(e.code==='auth/too-many-requests') alert('시도가 많아 잠시 막혔어요. 잠시 후 다시 시도해주세요.');
+      else alert('변경에 실패했어요: '+(e.message||e));
+    }
+  };
 }
 
 /* ===================== 시작 ===================== */

@@ -154,6 +154,7 @@
       <div class="right">
         <select class="seasonsel" id="seasonSel"></select>
         <button class="addseason" id="addSeason">+ 회차 등록</button>
+        <button class="ghost" id="changePwBtn">비밀번호 변경</button>
         <button class="ghost" id="signoutBtn">로그아웃</button>
       </div>
     </div>
@@ -411,7 +412,7 @@ function runDemo(){
 /* ===================== 실제 모드 ===================== */
 async function runFirebase(){
   const [{initializeApp},
-         {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut},
+         {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut,updatePassword,reauthenticateWithCredential,EmailAuthProvider},
          {getFirestore,collection,getDocs,query,where,doc,setDoc,getDoc,deleteDoc},
          {getFunctions,httpsCallable}]=await Promise.all([
     import("https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js"),
@@ -524,6 +525,27 @@ async function runFirebase(){
   });
   document.getElementById('signoutBtn').onclick=()=>signOut(auth);
   document.getElementById('denyBack').onclick=()=>signOut(auth);
+  // 비밀번호 변경: 지금 비밀번호로 재인증한 뒤 원하는 새 비밀번호(8자 이상)로 변경
+  document.getElementById('changePwBtn').onclick=async()=>{
+    const u=auth.currentUser; if(!u){show('auth');return;}
+    const cur=(window.prompt('지금 쓰는 비밀번호를 입력하세요.\n(메일로 임시 비밀번호를 받았다면 그 비밀번호예요)')||'');
+    if(!cur) return;
+    const np=(window.prompt('새 비밀번호를 입력하세요. (8자 이상, 영문·숫자 자유)')||'');
+    if(!np) return;
+    if(np.length<8){ alert('비밀번호는 8자 이상으로 입력해주세요.'); return; }
+    const np2=(window.prompt('확인을 위해 새 비밀번호를 한 번 더 입력하세요.')||'');
+    if(np!==np2){ alert('두 번 입력한 비밀번호가 달라요. 다시 시도해주세요.'); return; }
+    try{
+      const cred=EmailAuthProvider.credential(u.email, cur);
+      await reauthenticateWithCredential(u, cred);
+      await updatePassword(u, np);
+      alert('비밀번호를 바꿨어요. 앞으로 새 비밀번호로 로그인하세요.');
+    }catch(e){
+      if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential') alert('지금 비밀번호가 일치하지 않아요. 기존 비밀번호를 모르면 로그인 화면의 ‘비밀번호를 잊으셨나요?’로 임시 비밀번호를 먼저 받으세요.');
+      else if(e.code==='auth/too-many-requests') alert('시도가 많아 잠시 막혔어요. 잠시 후 다시 시도해주세요.');
+      else alert('변경에 실패했어요: '+(e.message||e));
+    }
+  };
   document.getElementById('seasonSel').onchange=async e=>{SEASON=e.target.value;await loadAll();};
   document.getElementById('saveCfg').onclick=async()=>{
     const d=document.getElementById('startDate').value;if(!d)return;
